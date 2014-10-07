@@ -1,0 +1,37 @@
+<FireflyConfig>
+
+<PacketSequence>
+
+	<FireFlyDSPacket type="transducerCmd" debugFlag="enable" rssiThresh="-32" encryptFlag="enable" treeFilterFlag="enable" linkAckFlag="enable" ackRetry="15" seqNum="auto" prio="1" nav="10" maxHopCnt="5" delayPerLevel="1" MACCheckRate="100" >
+		<Transducer macAddr="ff" type="TRAN_FF_BASIC_SHORT" />
+		<Transducer macAddr="f0" type="TRAN_POWER_PKT" action="actuate" params="socket0:on"/>
+		<Transducer macAddr="f0" type="TRAN_POWER_PKT" action="sense" params="socket0"/>
+		<Transducer macAddr="ff" type="TRAN_LED_BLINK" params="RED|GREEN|BLUE|ORANGE"/>
+	</FireFlyDSPacket>	
+
+
+
+	<Sleep value="400"></Sleep>
+
+	<FireFlyDSPacket type="transducerCmd" debugFlag="enable" rssiThresh="-32" encryptFlag="enable" treeFilterFlag="enable" linkAckFlag="enable" ackRetry="15" seqNum="auto" prio="1" nav="32" maxHopCnt="5" delayPerLevel="1" MACCheckRate="100" >
+		<MACFilter macAddr="01"/>
+		<MACFilter macAddr="0a"/>
+		<Transducer macAddr="ff" type="TRAN_FF_BASIC_SHORT" />
+		<rawPayload hexData=""/>
+	</FireFlyDSPacket>	
+
+	<Sleep value="400"></Sleep>
+
+
+	<FireFlyP2PPacket type="TRANSDUCER_CMD_PKT" debugFlag="disable" linkAckFlag="enable" srcMac="01020304" dstMac="05060708" lastHop="04" nextHop="ff" checkRate="default" ackRetry="16" seqNum="auto" prio="auto" >
+		<rawPayload hexData="0102030405"/>
+	</FireFlyP2PPacket>
+
+
+	<Sleep value="400"></Sleep>
+
+
+
+</PacketSequence>
+
+</FireflyConfig>
