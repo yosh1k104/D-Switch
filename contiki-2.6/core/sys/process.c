@@ -115,7 +115,8 @@ process_start(struct process *p, const char *arg)
   p->state = PROCESS_STATE_RUNNING;
   PT_INIT(&p->pt);
 
-  PRINTF("process: starting '%s'\n", PROCESS_NAME_STRING(p));
+  // PRINTF("process: starting '%s'\n", PROCESS_NAME_STRING(p));
+  printf("process: starting '%s'\n", PROCESS_NAME_STRING(p));
 
   /* Post a synchronous initialization event to the process. */
   process_post_synch(p, PROCESS_EVENT_INIT, (process_data_t)arg);
@@ -127,7 +128,8 @@ exit_process(struct process *p, struct process *fromprocess)
   register struct process *q;
   struct process *old_current = process_current;
 
-  PRINTF("process: exit_process '%s'\n", PROCESS_NAME_STRING(p));
+  // PRINTF("process: exit_process '%s'\n", PROCESS_NAME_STRING(p));
+  printf("process: exit_process '%s'\n", PROCESS_NAME_STRING(p));
 
   /* Make sure the process is in the process list before we try to
      exit it. */
@@ -185,7 +187,16 @@ call_process(struct process *p, process_event_t ev, process_data_t data)
   
   if((p->state & PROCESS_STATE_RUNNING) &&
      p->thread != NULL) {
-    PRINTF("process: calling process '%s' with event %d\n", PROCESS_NAME_STRING(p), ev);
+    // PRINTF("process: calling process '%s' with event %d\n", PROCESS_NAME_STRING(p), ev);
+    if(ev == 129){
+        printf("process: calling process '%s' with event PROCESS_EVENT_INIT\n", PROCESS_NAME_STRING(p));
+    }
+    else if (ev == 130){
+        printf("process: calling process '%s' with event PROCESS_EVENT_POLL\n", PROCESS_NAME_STRING(p));
+    }
+    else if (ev == 136){
+        printf("process: calling process '%s' with event PROCESS_EVENT_TIMER\n", PROCESS_NAME_STRING(p));
+    }
     process_current = p;
     p->state = PROCESS_STATE_CALLED;
     ret = p->thread(&p->pt, ev, data);
@@ -325,10 +336,12 @@ process_post(struct process *p, process_event_t ev, process_data_t data)
   static process_num_events_t snum;
 
   if(PROCESS_CURRENT() == NULL) {
-    PRINTF("process_post: NULL process posts event %d to process '%s', nevents %d\n",
+    // PRINTF("process_post: NULL process posts event %d to process '%s', nevents %d\n",
+    printf("process_post: NULL process posts event %d to process '%s', nevents %d\n",
 	   ev,PROCESS_NAME_STRING(p), nevents);
   } else {
-    PRINTF("process_post: Process '%s' posts event %d to process '%s', nevents %d\n",
+    // PRINTF("process_post: Process '%s' posts event %d to process '%s', nevents %d\n",
+    printf("process_post: Process '%s' posts event %d to process '%s', nevents %d\n",
 	   PROCESS_NAME_STRING(PROCESS_CURRENT()), ev,
 	   p == PROCESS_BROADCAST? "<broadcast>": PROCESS_NAME_STRING(p), nevents);
   }

@@ -117,6 +117,7 @@ PROCESS_THREAD(etimer_process, ev, data)
     for(t = timerlist; t != NULL; t = t->next) {
       if(timer_expired(&t->timer)) {
 	if(process_post(t->p, PROCESS_EVENT_TIMER, t) == PROCESS_ERR_OK) {
+      printf("************etimer_request_post is done************\n");
 	  
 	  /* Reset the process ID of the event timer, to signal that the
 	     etimer has expired. This is later checked in the
@@ -154,6 +155,7 @@ add_timer(struct etimer *timer)
   struct etimer *t;
 
   etimer_request_poll();
+  printf("/+++++++++++++++++++++++/\n");
 
   if(timer->p != PROCESS_NONE) {
     /* Timer not on list. */
