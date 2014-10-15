@@ -148,6 +148,7 @@ struct pt {
   do {						\
     LC_SET((pt)->lc);				\
     if(!(condition)) {				\
+      printf("____waiting return____\n");  \
       return PT_WAITING;			\
     }						\
   } while(0)
