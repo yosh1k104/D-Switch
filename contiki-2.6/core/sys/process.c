@@ -78,6 +78,11 @@ static volatile unsigned char poll_requested;
 #define PROCESS_STATE_NONE        0
 #define PROCESS_STATE_RUNNING     1
 #define PROCESS_STATE_CALLED      2
+#define PROCESS_STATE_WAITING     3
+#define PROCESS_STATE_READY       4
+#define PROCESS_STATE_SUSPENDED   5
+#define PROCESS_STATE_FINISHED    6
+
 
 static void call_process(struct process *p, process_event_t ev, process_data_t data);
 
