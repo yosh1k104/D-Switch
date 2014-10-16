@@ -325,6 +325,14 @@ struct process {
   PT_THREAD((* thread)(struct pt *, process_event_t, process_data_t));
   struct pt pt;
   unsigned char state, needspoll;
+
+  int8_t process_id;
+
+  uint8_t *os_task_stk_ptr;
+  uint8_t *os_tcb_stk_bottom;
+
+  uint16_t  next_wakeup;
+  uint16_t  next_period;
 };
 
 /**
