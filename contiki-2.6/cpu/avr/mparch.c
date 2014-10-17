@@ -38,18 +38,18 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <stdio.h>
-#include "sys/mt.h"
+#include "sys/mp.h"
 #include "dev/rs232.h"
 
 /*--------------------------------------------------------------------------*/
 void
-mtarch_init(void)
+mparch_init(void)
 {
   
 }
 /*--------------------------------------------------------------------------*/
 void
-mtarch_start(struct mtarch_thread *t,
+mparch_start(struct mtarch_thread *t,
 	     void (*function)(void *), void *data)
 {
   /* Initialize stack with number sequence (used for
@@ -183,7 +183,7 @@ sw(void)
 }
 /*--------------------------------------------------------------------------*/
 void
-mtarch_exec(struct mtarch_thread *t)
+mparch_exec(struct mtarch_thread *t)
 {
   running = t;
   sw();
@@ -192,37 +192,37 @@ mtarch_exec(struct mtarch_thread *t)
 
 /*--------------------------------------------------------------------------*/
 void
-mtarch_remove(void)
+mparch_remove(void)
 {
 
 }
 /*--------------------------------------------------------------------------*/
 void
-mtarch_yield(void)
+mparch_yield(void)
 {
   sw();
 }
 /*--------------------------------------------------------------------------*/
 void
-mtarch_pstop(void)
+mparch_pstop(void)
 {
   
 }
 /*--------------------------------------------------------------------------*/
 void
-mtarch_pstart(void)
+mparch_pstart(void)
 {
   
 }
 /*--------------------------------------------------------------------------*/
 void
-mtarch_stop(struct mtarch_thread *t)
+mparch_stop(struct mtarch_thread *t)
 {
   
 }
 /*--------------------------------------------------------------------------*/
 int
-mtarch_stack_usage(struct mt_thread *t)
+mparch_stack_usage(struct mt_thread *t)
 {
   uint8_t i;
   for(i = 0; i < MTARCH_STACKSIZE; ++i) {
