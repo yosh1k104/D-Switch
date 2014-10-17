@@ -404,4 +404,12 @@ process_is_running(struct process *p)
   return p->state != PROCESS_STATE_NONE;
 }
 /*---------------------------------------------------------------------------*/
+void
+process_interrupt(struct process *p)
+{
+    // TODO call init change stack function
+    process_current->state = PROCESS_STATE_SUSPENDED;
+    p->state = PROCESS_STATE_RUNNING;
+}
+/*---------------------------------------------------------------------------*/
 /** @} */
