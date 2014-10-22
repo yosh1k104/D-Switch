@@ -43,7 +43,8 @@
 
 #include "dev/leds.h"
 #include "net/rime/rimeaddr.h"
-#include "net/rime/packetbuf.h"
+//#include "net/rime/packetbuf.h"
+#include "net/packetbuf.h"
 #include "net/rime/broadcast.h"
 #include "sys/rtimer.h"
 
@@ -57,7 +58,7 @@
 #define PRINTF(...)
 #endif
 
-#define PRIOD_T  5*RTIMER_SECOND
+#define PERIOD_T  5*RTIMER_SECOND
 
 static uint8_t counter = 0;
 static struct rtimer my_timer;
@@ -116,6 +117,14 @@ PROCESS_THREAD(myrtimer_process, ev, data)
 
    PROCESS_BEGIN();
 
+   printf("Starting the application...\n");  
+
+   periodic_rtimer(&my_timer, NULL);  
+
+   /*
+    *   this is not used
+    */
+   /*
    static struct etimer et;
    uint8_t ret;
 
@@ -125,6 +134,7 @@ PROCESS_THREAD(myrtimer_process, ev, data)
    if(ret){
          PRINTF("Error Timer: %u\n", ret);
    }
+   */
 
    while(1){                     
             PROCESS_YIELD(); //because we do not want to do anything in particular in this while loop
