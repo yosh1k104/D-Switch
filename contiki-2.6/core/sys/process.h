@@ -326,13 +326,17 @@ struct process {
   struct pt pt;
   unsigned char state, needspoll;
 
-  int8_t process_id;
+  /*++++++++++++++++++++++++++++++++*/
+  int8_t process_id;        // For quick reference later, -1 means not active 
+  
+  // defined in "nano-RK/src/platform/micaZ/include/hal.h"
+  uint8_t *os_task_stk_ptr;     /* Pointer to current top of stack */
+  uint8_t *os_tcb_stk_bottom;   /* Pointer to bottom of stack */
 
-  uint8_t *os_task_stk_ptr;
-  uint8_t *os_tcb_stk_bottom;
-
+  // Inside TCB, all timer values stored in tick multiples to save memory
   uint16_t  next_wakeup;
   uint16_t  next_period;
+  /*++++++++++++++++++++++++++++++++*/
 };
 
 /**
