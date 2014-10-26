@@ -44,7 +44,7 @@
 /* OBS: 8 seconds maximum time! */
 
 #include <avr/io.h>
-#include <avr/interrupt.h>
+#include <avr/interrupt.h> /* PATH="/usr/local/avr/include/avr" */
 #include <stdio.h>
 
 #include "sys/energest.h"
@@ -374,8 +374,8 @@ ISR(TIMER2_COMPA_vect)
 //   "push    r29 \n\t" \
 //   "push    r30 \n\t" \
 //   "push    r31 \n\t" \
-//   "lds r26,nrk_cur_task_TCB \n\t" \
-//   "lds r27,nrk_cur_task_TCB+1 \n\t" \
+//   "lds r26,PROCESS_CURRENT() \n\t" \      //   "lds r26,nrk_cur_task_TCB \n\t" \
+//   "lds r27,PROCESS_CURRENT()+1 \n\t" \    //   "lds r27,nrk_cur_task_TCB+1 \n\t" \
 //   "in r0,__SP_L__ \n\t" \
 //   "st x+, r0 \n\t" \
 //   "in r0,__SP_H__ \n\t" \
