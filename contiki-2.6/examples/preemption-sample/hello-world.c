@@ -162,6 +162,7 @@ PROCESS_THREAD(blink_red_process, ev, data)
 
         now = clock_seconds();
         while(clock_seconds() < (now + RED_INTERVAL)){
+            //printf("<   leds_on(RED) @ %lu    in while loop    >\n", clock_seconds());
         }
 
         leds_off(LEDS_RED);
@@ -195,6 +196,7 @@ PROCESS_THREAD(blink_green_process, ev, data)
 
         now = clock_seconds();
         while(clock_seconds() < (now + GREEN_INTERVAL)){
+            //printf("<   leds_on(GREEN) @ %lu    in while loop    >\n", clock_seconds());
         }
 
         leds_off(LEDS_GREEN);
@@ -228,6 +230,7 @@ PROCESS_THREAD(blink_yellow_process, ev, data)
 
         now = clock_seconds();
         while(clock_seconds() < (now + YELLOW_INTERVAL)){
+            //printf("<   leds_on(YELLOW) @ %lu    in while loop    >\n", clock_seconds());
         }
 
         leds_off(LEDS_YELLOW);
