@@ -44,17 +44,17 @@
 #include <stdio.h> /* For printf() */
 
 #define RED_INTERVAL 2
-#define BLUE_INTERVAL 3
-#define GREEN_INTERVAL 4
+#define GREEN_INTERVAL 3
+#define YELLOW_INTERVAL 4
 /*---------------------------------------------------------------------------*/
 PROCESS(hello_world_process, "Hello world process");
 PROCESS(blink_red_process, "LED blink red process");
-PROCESS(blink_blue_process, "LED blink blue process");
 PROCESS(blink_green_process, "LED blink green process");
+PROCESS(blink_yellow_process, "LED blink yellow process");
 AUTOSTART_PROCESSES(&hello_world_process,
                     &blink_red_process,
-                    &blink_blue_process,
-                    &blink_green_process
+                    &blink_green_process,
+                    &blink_yellow_process
 );
 /*---------------------------------------------------------------------------*/
 /* Implementation of the first process */
@@ -128,7 +128,7 @@ PROCESS_THREAD(blink_red_process, ev, data)
 }
 /*---------------------------------------------------------------------------*/
 /* Implementation of the third process */
-PROCESS_THREAD(blink_blue_process, ev, data)
+PROCESS_THREAD(blink_green_process, ev, data)
 {
     static struct etimer timer;
     static uint8_t leds_state = 0;
@@ -144,23 +144,23 @@ PROCESS_THREAD(blink_blue_process, ev, data)
         PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_TIMER);
 
         printf("=clock_seconds: %lu=\n", clock_seconds());
-        printf("\n----------Got event number %d in blink_blue-----------\n\n", ev);
+        printf("\n----------Got event number %d in blink_green-----------\n\n", ev);
         
         //leds_on(LEDS_ALL);
-        leds_on(LEDS_BLUE);
+        leds_on(LEDS_GREEN);
 
         now = clock_seconds();
-        while(clock_seconds() < (now + BLUE_INTERVAL)){
+        while(clock_seconds() < (now + GREEN_INTERVAL)){
         }
 
-        leds_off(LEDS_BLUE);
+        leds_off(LEDS_GREEN);
 
     }
     PROCESS_END();
 }
 /*---------------------------------------------------------------------------*/
 /* Implementation of the fourth process */
-PROCESS_THREAD(blink_green_process, ev, data)
+PROCESS_THREAD(blink_yellow_process, ev, data)
 {
     static struct etimer timer;
     static uint8_t leds_state = 0;
@@ -176,16 +176,16 @@ PROCESS_THREAD(blink_green_process, ev, data)
         PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_TIMER);
 
         printf("=clock_seconds: %lu=\n", clock_seconds());
-        printf("\n----------Got event number %d in blink_green-----------\n\n", ev);
+        printf("\n----------Got event number %d in blink_yellow-----------\n\n", ev);
         
         //leds_on(LEDS_ALL);
-        leds_on(LEDS_GREEN);
+        leds_on(LEDS_YELLOW);
 
         now = clock_seconds();
-        while(clock_seconds() < (now + GREEN_INTERVAL)){
+        while(clock_seconds() < (now + YELLOW_INTERVAL)){
         }
 
-        leds_off(LEDS_GREEN);
+        leds_off(LEDS_YELLOW);
 
     }
     PROCESS_END();
