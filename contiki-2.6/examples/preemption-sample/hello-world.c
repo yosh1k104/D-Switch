@@ -65,7 +65,8 @@ AUTOSTART_PROCESSES(&preemption_process,
 );
 /*---------------------------------------------------------------------------*/
 /* the function which gets called each time the rtimer triggers */
-static char periodic_rtimer(struct rtimer *rt, void* ptr){  
+static char periodic_rtimer(struct rtimer *rt, void* ptr)
+{  
     uint8_t ret;  
     rtimer_clock_t time_now = RTIMER_NOW();  
     
@@ -153,17 +154,18 @@ PROCESS_THREAD(blink_red_process, ev, data)
         // and wait until the vent we receive is the one we're waiting for
         PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_TIMER);
 
-        printf("=clock_seconds: %lu=\n", clock_seconds());
         printf("\n----------Got event number %d in blink_red-----------\n\n", ev);
         
        // leds_off(LEDS_ALL);
         leds_on(LEDS_RED);
+        printf("\n{   leds_on(RED) @ %lu    }\n\n", clock_seconds());
 
         now = clock_seconds();
         while(clock_seconds() < (now + RED_INTERVAL)){
         }
 
         leds_off(LEDS_RED);
+        printf("\n{   leds_off(RED) @ %lu    }\n\n", clock_seconds());
 
     }
     PROCESS_END();
@@ -185,17 +187,18 @@ PROCESS_THREAD(blink_green_process, ev, data)
         // and wait until the vent we receive is the one we're waiting for
         PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_TIMER);
 
-        printf("=clock_seconds: %lu=\n", clock_seconds());
         printf("\n----------Got event number %d in blink_green-----------\n\n", ev);
         
         //leds_on(LEDS_ALL);
         leds_on(LEDS_GREEN);
+        printf("\n{   leds_on(GREEN) @ %lu    }\n\n", clock_seconds());
 
         now = clock_seconds();
         while(clock_seconds() < (now + GREEN_INTERVAL)){
         }
 
         leds_off(LEDS_GREEN);
+        printf("\n{   leds_off(GREEN) @ %lu    }\n\n", clock_seconds());
 
     }
     PROCESS_END();
@@ -217,17 +220,18 @@ PROCESS_THREAD(blink_yellow_process, ev, data)
         // and wait until the vent we receive is the one we're waiting for
         PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_TIMER);
 
-        printf("=clock_seconds: %lu=\n", clock_seconds());
         printf("\n----------Got event number %d in blink_yellow-----------\n\n", ev);
         
         //leds_on(LEDS_ALL);
         leds_on(LEDS_YELLOW);
+        printf("\n{   leds_on(YELLOW) @ %lu    }\n\n", clock_seconds());
 
         now = clock_seconds();
         while(clock_seconds() < (now + YELLOW_INTERVAL)){
         }
 
         leds_off(LEDS_YELLOW);
+        printf("\n{   leds_off(YELLOW) @ %lu    }\n\n", clock_seconds());
 
     }
     PROCESS_END();
