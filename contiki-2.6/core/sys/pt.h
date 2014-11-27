@@ -148,7 +148,7 @@ struct pt {
   do {						\
     LC_SET((pt)->lc);				\
     if(!(condition)) {				\
-      printf("____waiting return____\n");  \
+      printf("____waiting return *until*____\n");  \
       return PT_WAITING;			\
     }						\
   } while(0)
@@ -292,6 +292,7 @@ struct pt {
     PT_YIELD_FLAG = 0;				\
     LC_SET((pt)->lc);				\
     if(PT_YIELD_FLAG == 0) {			\
+      printf("____waiting return *yield*____\n");  \
       return PT_YIELDED;			\
     }						\
   } while(0)

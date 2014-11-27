@@ -54,6 +54,8 @@
  */
 struct process *process_list = NULL;
 struct process *process_current = NULL;
+/* ysk changed */
+struct process *process_high_ready = NULL;  // +
  
 static process_event_t lastevent;
 
@@ -231,7 +233,9 @@ process_init(void)
   process_maxevents = 0;
 #endif /* PROCESS_CONF_STATS */
 
+  /* ysk changed */
   process_current = process_list = NULL;
+  process_high_ready = NULL;    // +
 }
 /*---------------------------------------------------------------------------*/
 /*

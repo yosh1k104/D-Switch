@@ -332,6 +332,8 @@ struct process {
   // defined in "nano-RK/src/platform/micaZ/include/hal.h"
   uint8_t *os_task_stk_ptr;     /* Pointer to current top of stack */
   uint8_t *os_tcb_stk_bottom;   /* Pointer to bottom of stack */
+  
+  // bool      suspend_flag;
 
   // Inside TCB, all timer values stored in tick multiples to save memory
   uint16_t  next_wakeup;
@@ -415,6 +417,11 @@ CCIF void process_exit(struct process *p);
  */
 #define PROCESS_CURRENT() process_current
 CCIF extern struct process *process_current;
+
+/*+++++++++++++++++++++++++++++++++++++++*/
+#define PROCESS_EXECUTED_NEXT() process_high_ready
+CCIF extern struct process *process_high_ready;
+/*+++++++++++++++++++++++++++++++++++++++*/
 
 /**
  * Switch context to another process

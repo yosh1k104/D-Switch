@@ -73,21 +73,27 @@ static void leds_set(uint8_t count){
 
  //the shift is due to the change on the leds in the Tmote Sky platform
          if(count & LEDS_GREEN){
+           printf("================rtimer green on================\n");
            leds_on(LEDS_GREEN<<1);
          }else{
-            leds_off(LEDS_GREEN<<1);
+           printf("================rtimer green off================\n");
+           leds_off(LEDS_GREEN<<1);
          }
 
          if(count & LEDS_YELLOW){
+           printf("================rtimer yellow on================\n");
            leds_on(LEDS_YELLOW>>1);
          }else{
+           printf("================rtimer yellow off================\n");
            leds_off(LEDS_YELLOW>>1);
          }
 
          if(count & LEDS_RED){
-          leds_on(LEDS_RED);
+           printf("================rtimer red on================\n");
+           leds_on(LEDS_RED);
          }else{
-          leds_off(LEDS_RED);
+           printf("================rtimer red off================\n");
+           leds_off(LEDS_RED);
          }
 }
 

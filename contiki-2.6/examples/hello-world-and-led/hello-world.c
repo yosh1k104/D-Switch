@@ -41,7 +41,6 @@
 #include "contiki.h"
 
 #include <stdio.h> /* For printf() */
-#include <stdio.h> /* For printf() */
 #include "dev/leds.h"
 /*---------------------------------------------------------------------------*/
 /* We declare the two processes */
@@ -171,7 +170,7 @@ PROCESS_THREAD(blink_red_on_process, ev, data)
     PROCESS_END();
 }
 /*---------------------------------------------------------------------------*/
-/* Implementation of the thrid process */
+/* Implementation of the third process */
 PROCESS_THREAD(blink_red_off_process, ev, data)
 {
     static struct etimer timer;

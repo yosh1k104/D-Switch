@@ -88,7 +88,8 @@ extern uint8_t debugflowsize,debugflow[DEBUGFLOWSIZE];
 /*---------------------------------------------------------------------------*/
 #if defined(TCNT3) && RTIMER_ARCH_PRESCALER
 ISR (TIMER3_COMPA_vect) {
-  printf("\n\n---------------call ISR3--------------\n\n-");
+  printf("\n\n---------------call ISR3---------------\n\n");
+  //SAVE_CONTEXT();
   DEBUGFLOW('/');
   ENERGEST_ON(ENERGEST_TYPE_IRQ);
 
@@ -103,16 +104,20 @@ ISR (TIMER3_COMPA_vect) {
 #endif
 
   /* Call rtimer callback */
+  printf("start rtimer next\n");
   rtimer_run_next();
+  printf("finish rtimer next\n");
 
   ENERGEST_OFF(ENERGEST_TYPE_IRQ);
   DEBUGFLOW('\\');
+  //RESTORE_CONTEXT();
+  printf("\n\n---------------end ISR3---------------\n\n");
 }
 
 #elif RTIMER_ARCH_PRESCALER
 #warning "No Timer3 in rtimer-arch.c - using Timer1 instead"
 ISR (TIMER1_COMPA_vect) {
-  printf("\n\n---------------call ISR1--------------\n\n-");
+  printf("\n\n---------------call ISR1---------------\n\n");
   DEBUGFLOW('/');
   TIMSK &= ~((1<<TICIE1)|(1<<OCIE1A)|(1<<OCIE1B)|(1<<TOIE1));
 
@@ -200,6 +205,7 @@ rtimer_arch_init(void)
 void
 rtimer_arch_schedule(rtimer_clock_t t)
 {
+    printf("start rtimer_arch_schedule\n");
 #if RTIMER_ARCH_PRESCALER
   /* Disable interrupts (store old state) */
   uint8_t sreg;
@@ -226,6 +232,7 @@ rtimer_arch_schedule(rtimer_clock_t t)
   /* Restore interrupt state */
   SREG = sreg;
 #endif /* RTIMER_ARCH_PRESCALER */
+    printf("finish rtimer_arch_schedule\n");
 }
 
 #if RDC_CONF_MCU_SLEEP
@@ -330,7 +337,7 @@ uint32_t longhowlong;
 
 ISR(TIMER2_COMPA_vect)
 {
-  printf("\n\n---------------call ISR2--------------\n\n-");
+  printf("\n\n---------------call ISR2---------------\n\n");
 //    TIMSK2 &= ~(1 << OCIE2A);       //Just one interrupt needed for waking
 }
 #endif /* !AVR_CONF_USE32KCRYSTAL */
@@ -374,8 +381,8 @@ ISR(TIMER2_COMPA_vect)
 //   "push    r29 \n\t" \
 //   "push    r30 \n\t" \
 //   "push    r31 \n\t" \
-//   "lds r26,PROCESS_CURRENT() \n\t" \      //   "lds r26,nrk_cur_task_TCB \n\t" \
-//   "lds r27,PROCESS_CURRENT()+1 \n\t" \    //   "lds r27,nrk_cur_task_TCB+1 \n\t" \
+//   "lds r26,PROCESS_CURRENT() \n\t" \      //   "lds r26,nrk_cur_task_TCB \n\t" 
+//   "lds r27,PROCESS_CURRENT()+1 \n\t" \    //   "lds r27,nrk_cur_task_TCB+1 \n\t" 
 //   "in r0,__SP_L__ \n\t" \
 //   "st x+, r0 \n\t" \
 //   "in r0,__SP_H__ \n\t" \
@@ -398,8 +405,8 @@ ISR(TIMER2_COMPA_vect)
 //void SIG_OUTPUT_COMPARE0( void ) __attribute__ ( ( signal,naked ));
 //void SIG_OUTPUT_COMPARE0(void) {
 //   asm volatile (
-//   "lds r27,nrk_high_ready_TCB \n\t" \
-//   "lds r27,nrk_high_ready_TCB+1 \n\t" \
+//   "lds r27,PROCESS_EXECUTED_NEXT() \n\t" \    //   "lds r27,nrk_high_ready_TCB \n\t"
+//   "lds r27,PROCESS_EXECUTED_NEXT+1 \n\t" \  //   "lds r27,nrk_high_ready_TCB+1 \n\t" 
 //   
 //   	//;x points to &OSTCB[x]
 //   
