@@ -40,24 +40,66 @@
 
 #include "contiki.h"
 #include "dev/leds.h"
+#include "sys/rtimer.h"
 
 #include <stdio.h> /* For printf() */
 
 #define RED_INTERVAL 2
 #define GREEN_INTERVAL 3
 #define YELLOW_INTERVAL 4
+
+#define PERIOD_T 5*RTIMER_SECOND  
 /*---------------------------------------------------------------------------*/
+static struct rtimer my_timer;  
+
+PROCESS(preemption_process, "Preemption process");
 PROCESS(hello_world_process, "Hello world process");
 PROCESS(blink_red_process, "LED blink red process");
 PROCESS(blink_green_process, "LED blink green process");
 PROCESS(blink_yellow_process, "LED blink yellow process");
-AUTOSTART_PROCESSES(&hello_world_process,
+AUTOSTART_PROCESSES(&preemption_process,
+                    &hello_world_process,
                     &blink_red_process,
                     &blink_green_process,
                     &blink_yellow_process
 );
 /*---------------------------------------------------------------------------*/
+/* the function which gets called each time the rtimer triggers */
+static char periodic_rtimer(struct rtimer *rt, void* ptr){  
+    uint8_t ret;  
+    rtimer_clock_t time_now = RTIMER_NOW();  
+    
+    printf("Hello from rtimer!!!\n");  
+    
+    ret = rtimer_set(&my_timer, time_now + PERIOD_T, 1,   
+          (void (*)(struct rtimer *, void *))periodic_rtimer, NULL);  
+
+    if (ret)
+    {  
+        printf("Error Timer: %u\n", ret);  
+    }  
+
+    return 1;  
+}  
+/*---------------------------------------------------------------------------*/
 /* Implementation of the first process */
+PROCESS_THREAD(preemption_process, ev, data)  
+{  
+    PROCESS_BEGIN();  
+     
+    printf("Starting the application...\n");  
+     
+    periodic_rtimer(&my_timer, NULL);  
+     
+    while (1)
+    {             
+        PROCESS_YIELD();  
+    }  
+
+    PROCESS_END();  
+}  
+/*---------------------------------------------------------------------------*/
+/* Implementation of the second process */
 PROCESS_THREAD(hello_world_process, ev, data)
 {
     // variables are declared static to ensure their values are kept
@@ -95,7 +137,7 @@ PROCESS_THREAD(hello_world_process, ev, data)
     PROCESS_END();
 }
 /*---------------------------------------------------------------------------*/
-/* Implementation of the second process */
+/* Implementation of the third process */
 PROCESS_THREAD(blink_red_process, ev, data)
 {
     static struct etimer timer;
@@ -127,7 +169,7 @@ PROCESS_THREAD(blink_red_process, ev, data)
     PROCESS_END();
 }
 /*---------------------------------------------------------------------------*/
-/* Implementation of the third process */
+/* Implementation of the fourth process */
 PROCESS_THREAD(blink_green_process, ev, data)
 {
     static struct etimer timer;
@@ -159,7 +201,7 @@ PROCESS_THREAD(blink_green_process, ev, data)
     PROCESS_END();
 }
 /*---------------------------------------------------------------------------*/
-/* Implementation of the fourth process */
+/* Implementation of the fifth process */
 PROCESS_THREAD(blink_yellow_process, ev, data)
 {
     static struct etimer timer;
