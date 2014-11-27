@@ -106,7 +106,7 @@ PROCESS_THREAD(hello_world_process, ev, data)
     // variables are declared static to ensure their values are kept
     // between kernel calls.
     static struct etimer timer;
-    static int count = 0;
+    static uint8_t count = 0;
     
     // any process mustt start with this.
     PROCESS_BEGIN();
@@ -125,7 +125,7 @@ PROCESS_THREAD(hello_world_process, ev, data)
         {
             // do the process work
             printf("Hello, world: %d\n\n", count);
-            count ++;
+            count++;
             
             // reset the timer so it will generate an other event
             // the exact same time after it expired (periodicity guaranteed)
@@ -161,7 +161,8 @@ PROCESS_THREAD(blink_red_process, ev, data)
         printf("\n{   leds_on(RED) @ %lu    }\n\n", clock_seconds());
 
         now = clock_seconds();
-        while(clock_seconds() < (now + RED_INTERVAL)){
+        while(clock_seconds() < (now + RED_INTERVAL))
+        {
             //printf("<   leds_on(RED) @ %lu    in while loop    >\n", clock_seconds());
         }
 
@@ -195,7 +196,8 @@ PROCESS_THREAD(blink_green_process, ev, data)
         printf("\n{   leds_on(GREEN) @ %lu    }\n\n", clock_seconds());
 
         now = clock_seconds();
-        while(clock_seconds() < (now + GREEN_INTERVAL)){
+        while(clock_seconds() < (now + GREEN_INTERVAL))
+        {
             //printf("<   leds_on(GREEN) @ %lu    in while loop    >\n", clock_seconds());
         }
 
@@ -211,6 +213,7 @@ PROCESS_THREAD(blink_yellow_process, ev, data)
 {
     static struct etimer timer;
     static uint8_t leds_state = 0;
+    static uint8_t count = 0;
     static uint32_t now = 0;
     PROCESS_BEGIN();
     
@@ -229,8 +232,19 @@ PROCESS_THREAD(blink_yellow_process, ev, data)
         printf("\n{   leds_on(YELLOW) @ %lu    }\n\n", clock_seconds());
 
         now = clock_seconds();
-        while(clock_seconds() < (now + YELLOW_INTERVAL)){
-            //printf("<   leds_on(YELLOW) @ %lu    in while loop    >\n", clock_seconds());
+        while(clock_seconds() < (now + YELLOW_INTERVAL))
+        {
+            if(count % 10 == 0)
+            {
+                leds_on(LEDS_YELLOW);
+                printf("<   leds_on(YELLOW) @ %lu    in while loop    >\n", clock_seconds());
+            }
+            else if(count % 10 == 5)
+            {
+                leds_off(LEDS_YELLOW);
+            }
+
+            count++;
         }
 
         leds_off(LEDS_YELLOW);
