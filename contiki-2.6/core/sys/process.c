@@ -122,7 +122,6 @@ process_start(struct process *p, const char *arg)
   p->state = PROCESS_STATE_RUNNING;
   PT_INIT(&p->pt);
 
-  // PRINTF("process: starting '%s'\n", PROCESS_NAME_STRING(p));
   printf("process: starting '%s'\n", PROCESS_NAME_STRING(p));
 
   /* Post a synchronous initialization event to the process. */
@@ -135,7 +134,6 @@ exit_process(struct process *p, struct process *fromprocess)
   register struct process *q;
   struct process *old_current = process_current;
 
-  // PRINTF("process: exit_process '%s'\n", PROCESS_NAME_STRING(p));
   printf("process: exit_process '%s'\n", PROCESS_NAME_STRING(p));
 
   /* Make sure the process is in the process list before we try to
@@ -194,7 +192,6 @@ call_process(struct process *p, process_event_t ev, process_data_t data)
   
   if((p->state & PROCESS_STATE_RUNNING) &&
      p->thread != NULL) {
-    // PRINTF("process: calling process '%s' with event %d\n", PROCESS_NAME_STRING(p), ev);
     if(ev == 129){
         printf("process: calling process '%s' with event PROCESS_EVENT_INIT\n", PROCESS_NAME_STRING(p));
     }
@@ -345,11 +342,9 @@ process_post(struct process *p, process_event_t ev, process_data_t data)
   static process_num_events_t snum;
 
   if(PROCESS_CURRENT() == NULL) {
-    // PRINTF("process_post: NULL process posts event %d to process '%s', nevents %d\n",
     printf("process_post: NULL process posts event %d to process '%s', nevents %d\n",
 	   ev,PROCESS_NAME_STRING(p), nevents);
   } else {
-    // PRINTF("process_post: Process '%s' posts event %d to process '%s', nevents %d\n",
     printf("process_post: Process '%s' posts event %d to process '%s', nevents %d\n",
 	   PROCESS_NAME_STRING(PROCESS_CURRENT()), ev,
 	   p == PROCESS_BROADCAST? "<broadcast>": PROCESS_NAME_STRING(p), nevents);
@@ -409,11 +404,32 @@ process_is_running(struct process *p)
 }
 /*---------------------------------------------------------------------------*/
 void
-process_interrupt(struct process *p)
+process_suspend(struct process *p)
 {
-    // TODO call init change stack function
+  // TODO call init change stack function
+  char suspend_flag = 1;
+
+  struct process *tmp_p;
+  for(tmp_p = process_list; tmp_p != NULL; tmp_p = tmp_p->next) {
+    if(tmp_p->state == PROCESS_STATE_SUSPENDED) {
+      suspend_flag = 0;
+      break;
+    }
+  }
+
+  if(suspend_flag == 1) {
     process_current->state = PROCESS_STATE_SUSPENDED;
-    p->state = PROCESS_STATE_RUNNING;
+  }
+  else {
+    process_current->state = PROCESS_STATE_RUNNING;
+  }
+
+  printf("\nsuspended\n");
+  printf("process_current: %s - state: %d\n", PROCESS_NAME_STRING(process_current), process_current->state);
+  printf("suspended\n\n");
+
+  p->state = PROCESS_STATE_CALLED;
+  process_current = p;
 }
 /*---------------------------------------------------------------------------*/
 /** @} */
