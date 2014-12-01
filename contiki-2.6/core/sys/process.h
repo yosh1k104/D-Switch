@@ -103,7 +103,7 @@ typedef unsigned char process_num_events_t;
 #define PROCESS_EVENT_PREEMPT         0x8b
 
 #define PREEMPTIVE_OK   1
-#define NON_PREEMTIVE   0
+#define NON_PREEMPTIVE   0
 
 #define PROCESS_BROADCAST NULL
 #define PROCESS_ZOMBIE ((struct process *)0x1)
