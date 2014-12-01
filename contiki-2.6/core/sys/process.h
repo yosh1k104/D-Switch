@@ -102,6 +102,9 @@ typedef unsigned char process_num_events_t;
 #define PROCESS_EVENT_MAX             0x8a
 #define PROCESS_EVENT_PREEMPT         0x8b
 
+#define PREEMPTIVE_OK   1
+#define NON_PREEMTIVE   0
+
 #define PROCESS_BROADCAST NULL
 #define PROCESS_ZOMBIE ((struct process *)0x1)
 
@@ -328,13 +331,13 @@ struct process {
 
   int8_t process_id;        // For quick reference later, -1 means not active 
   
-  // defined in "nano-RK/src/platform/micaZ/include/hal.h"
+  /* NRK_STK defined in "nano-RK/src/platform/micaZ/include/hal.h" */
   uint8_t *os_task_stk_ptr;     /* Pointer to current top of stack */
   uint8_t *os_tcb_stk_bottom;   /* Pointer to bottom of stack */
   
-  char suspend_flag;
+  char preemptive_type;
 
-  // Inside TCB, all timer values stored in tick multiples to save memory
+  /* Inside TCB, all timer values stored in tick multiples to save memory */
   uint16_t  next_wakeup;
   uint16_t  next_period;
 };
@@ -543,6 +546,8 @@ int process_nevents(void);
 CCIF extern struct process *process_list;
 
 #define PROCESS_LIST() process_list
+
+CCIF extern void processs_suspend(struct process *p);
 
 #endif /* __PROCESS_H__ */
 
