@@ -54,8 +54,7 @@
  */
 struct process *process_list = NULL;
 struct process *process_current = NULL;
-/* ysk changed */
-struct process *process_high_ready = NULL;  // +
+struct process *process_preempted = NULL;  // +
  
 static process_event_t lastevent;
 
@@ -87,6 +86,7 @@ static volatile unsigned char poll_requested;
 
 
 static void call_process(struct process *p, process_event_t ev, process_data_t data);
+//int set_process_type(struct process *p, unsigned char type);
 
 #define DEBUG 0
 #if DEBUG
@@ -120,9 +120,12 @@ process_start(struct process *p, const char *arg)
   p->next = process_list;
   process_list = p;
   p->state = PROCESS_STATE_RUNNING;
+  //p->process_type = NORMAL_TASK;
+  //set_process_type(p, NORMAL_TASK);
   PT_INIT(&p->pt);
 
   printf("process: starting '%s'\n", PROCESS_NAME_STRING(p));
+  //printf("process: starting '%s' - type: %d\n", PROCESS_NAME_STRING(p), p->process_type);
 
   /* Post a synchronous initialization event to the process. */
   process_post_synch(p, PROCESS_EVENT_INIT, (process_data_t)arg);
@@ -230,9 +233,7 @@ process_init(void)
   process_maxevents = 0;
 #endif /* PROCESS_CONF_STATS */
 
-  /* ysk changed */
   process_current = process_list = NULL;
-  process_high_ready = NULL;    // +
 }
 /*---------------------------------------------------------------------------*/
 /*
@@ -403,33 +404,156 @@ process_is_running(struct process *p)
   return p->state != PROCESS_STATE_NONE;
 }
 /*---------------------------------------------------------------------------*/
-void
+//void
+//process_suspend(struct process *p)
+//{
+//  // TODO call init change stack function
+//
+//  static int count = 0;
+//  if(count == 0) {
+//      count++;
+//      return;
+//  }
+//
+//  char suspend_flag = 1;
+//
+//  struct process *tmp_p;
+//  for(tmp_p = process_list; tmp_p != NULL; tmp_p = tmp_p->next) {
+//    if(tmp_p->state == PROCESS_STATE_SUSPENDED) {
+//      suspend_flag = 0;
+//      break;
+//    }
+//  }
+//
+//  printf("\nsuspended\n");
+//  printf("process_current: %s - state: %d\n", PROCESS_NAME_STRING(PROCESS_CURRENT()), process_current->state);
+//  printf("suspended\n\n");
+//
+//  if(suspend_flag == 1) {
+//    process_current->state = PROCESS_STATE_SUSPENDED;
+//  }
+//  else {
+//    process_current->state = PROCESS_STATE_RUNNING;
+//  }
+//
+//  printf("\nsuspended\n");
+//  printf("process_current: %s - state: %d\n", PROCESS_NAME_STRING(PROCESS_CURRENT()), process_current->state);
+//  printf("suspended\n\n");
+//
+//  process_preempted = process_current;
+//  p->state = PROCESS_STATE_CALLED;
+//  process_current = p;
+//
+//  printf("\nsuspended\n");
+//  printf("process_current: %s - state: %d\n", PROCESS_NAME_STRING(PROCESS_CURRENT()), process_current->state);
+//  printf("process_preempted: %s - state: %d\n", PROCESS_NAME_STRING(process_preempted), process_preempted->state);
+//  printf("suspended\n\n");
+//
+//}
+/*---------------------------------------------------------------------------*/
+//int 
+//set_process_type(struct process *p, unsigned char type)
+//{
+//  p->process_type = type;
+//  return p->process_type;
+//}
+/*---------------------------------------------------------------------------*/
+int
 process_suspend(struct process *p)
 {
+  struct process *tmp_p;
+  for(tmp_p = process_list; tmp_p != NULL; tmp_p = tmp_p->next) {
+    if(tmp_p->state == PROCESS_STATE_SUSPENDED) {
+      printf("\nERROR SUSPENDED PROCESS HAS ALREADY EXISTED\n\n");
+      return PROCESS_ERR_SUSPEND;
+    }
+  }
+
+  if(process_preempted != NULL) {
+      printf("\nERROR SUSPENDED PROCESS HAS ALREADY EXISTED\n\n");
+      return PROCESS_ERR_SUSPEND;
+  }
+
+
+
+  printf("\nsuspended\n");
+  printf("process_current: %s - state: %d\n", PROCESS_NAME_STRING(PROCESS_CURRENT()), process_current->state);
+  printf("process_preempted: %s - state: %d\n", PROCESS_NAME_STRING(process_preempted), process_preempted->state);
+  printf("suspended\n\n");
+
+
+
+  if(process_current->state == PROCESS_STATE_RUNNING) {
+      printf("\nRUNNING PROCESS IS NONE\n\n");
+      return PROCESS_ERR_OK;
+  }
+
+  process_current->state = PROCESS_STATE_SUSPENDED;
+  process_preempted = process_current;
+  p->state = PROCESS_STATE_CALLED;
+  process_current = p;
+
+
+
+  printf("\nsuspended\n");
+  printf("process_current: %s - state: %d\n", PROCESS_NAME_STRING(PROCESS_CURRENT()), process_current->state);
+  printf("process_preempted: %s - state: %d\n", PROCESS_NAME_STRING(process_preempted), process_preempted->state);
+  printf("suspended\n\n");
+
+
+
+  return PROCESS_ERR_OK;
+}
+/*---------------------------------------------------------------------------*/
+int
+process_resume()
+{
   // TODO call init change stack function
-  char suspend_flag = 1;
+  //struct process *p
+  int suspend_count = 0;
 
   struct process *tmp_p;
   for(tmp_p = process_list; tmp_p != NULL; tmp_p = tmp_p->next) {
     if(tmp_p->state == PROCESS_STATE_SUSPENDED) {
-      suspend_flag = 0;
-      break;
+      //p = tmp_p;
+      suspend_count = suspend_count + 1;
     }
   }
 
-  if(suspend_flag == 1) {
-    process_current->state = PROCESS_STATE_SUSPENDED;
-  }
-  else {
-    process_current->state = PROCESS_STATE_RUNNING;
+  if(suspend_count != 1) {
+      printf("\nERROR SUSPENDED PROCESS IS NONE OR TOO MANY\n\n");
+      return PROCESS_ERR_RESUME;
   }
 
-  printf("\nsuspended\n");
-  printf("process_current: %s - state: %d\n", PROCESS_NAME_STRING(process_current), process_current->state);
-  printf("suspended\n\n");
+  if(process_preempted == NULL) {
+      printf("\nERROR PREEMPTED PROCESS IS NONE\n\n");
+      return PROCESS_ERR_RESUME;
+  }
 
-  p->state = PROCESS_STATE_CALLED;
-  process_current = p;
+  //printf("process_current1: %s - state: %d\n", PROCESS_NAME_STRING(PROCESS_CURRENT()), process_current->state);
+
+  printf("\nresume\n");
+  printf("process_current: %s - state: %d\n", PROCESS_NAME_STRING(PROCESS_CURRENT()), process_current->state);
+  printf("process_preempted: %s - state: %d\n", PROCESS_NAME_STRING(process_preempted), process_preempted->state);
+  printf("resume\n\n");
+
+
+
+  process_current->state = PROCESS_STATE_RUNNING;
+  process_current = process_preempted;
+  process_current->state = PROCESS_STATE_CALLED;
+  process_preempted = NULL;
+
+
+
+  printf("\nresume\n");
+  printf("process_current: %s - state: %d\n", PROCESS_NAME_STRING(PROCESS_CURRENT()), process_current->state);
+  printf("process_preempted: %s - state: %d\n", PROCESS_NAME_STRING(process_preempted), process_preempted->state);
+  printf("resume\n\n");
+
+
+
+  return PROCESS_ERR_OK;
 }
 /*---------------------------------------------------------------------------*/
 /** @} */

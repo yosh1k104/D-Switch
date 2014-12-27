@@ -81,6 +81,14 @@ typedef unsigned char process_num_events_t;
  *             not be posted.
  */
 #define PROCESS_ERR_FULL      1
+/**
+ * \brief      Return value indicating that the suspended process has already existed.
+ */
+#define PROCESS_ERR_SUSPEND   2
+/**
+ * \brief      Return value indicating that the suspended process was none.
+ */
+#define PROCESS_ERR_RESUME    3
 /* @} */
 
 #define PROCESS_NONE          NULL
@@ -102,8 +110,8 @@ typedef unsigned char process_num_events_t;
 #define PROCESS_EVENT_MAX             0x8a
 #define PROCESS_EVENT_PREEMPT         0x8b
 
-#define PREEMPTIVE_OK   1
-#define NON_PREEMPTIVE   0
+//#define REALTIME_TASK   1
+//#define NORMAL_TASK     2
 
 #define PROCESS_BROADCAST NULL
 #define PROCESS_ZOMBIE ((struct process *)0x1)
@@ -335,7 +343,7 @@ struct process {
   uint8_t *os_task_stk_ptr;     /* Pointer to current top of stack */
   uint8_t *os_tcb_stk_bottom;   /* Pointer to bottom of stack */
   
-  char preemptive_type;
+  //unsigned char process_type;
 
   /* Inside TCB, all timer values stored in tick multiples to save memory */
   uint16_t  next_wakeup;
@@ -419,10 +427,8 @@ CCIF void process_exit(struct process *p);
 #define PROCESS_CURRENT() process_current
 CCIF extern struct process *process_current;
 
-/*+++++++++++++++++++++++++++++++++++++++*/
-#define PROCESS_EXECUTED_NEXT() process_high_ready
-CCIF extern struct process *process_high_ready;
-/*+++++++++++++++++++++++++++++++++++++++*/
+#define PROCESS_PREEMPTED() process_preempted
+CCIF extern struct process *process_preempted;
 
 /**
  * Switch context to another process
@@ -547,7 +553,12 @@ CCIF extern struct process *process_list;
 
 #define PROCESS_LIST() process_list
 
-CCIF extern void processs_suspend(struct process *p);
+
+//CCIF extern int set_procress_type(struct process *p, unsigned char type);
+
+
+CCIF extern int processs_suspend(struct process *p);
+CCIF extern int processs_resume();
 
 #endif /* __PROCESS_H__ */
 
