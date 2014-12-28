@@ -430,6 +430,9 @@ CCIF extern struct process *process_current;
 #define PROCESS_PREEMPTED() process_preempted
 CCIF extern struct process *process_preempted;
 
+//#define PROCESS_REALTIME() process_realtime
+//CCIF extern struct process *process_realtime;
+
 /**
  * Switch context to another process
  *
@@ -558,7 +561,7 @@ CCIF extern struct process *process_list;
 
 
 CCIF extern int processs_suspend(struct process *p);
-CCIF extern int processs_resume();
+CCIF extern int processs_resume(struct process *p);
 
 #endif /* __PROCESS_H__ */
 
