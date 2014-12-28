@@ -55,7 +55,7 @@
 struct process *process_list = NULL;
 struct process *process_current = NULL;
 struct process *process_preempted = NULL;  // +
-//struct process *process_realtime = NULL;  // +
+struct process *process_realtime = NULL;  // +
  
 static process_event_t lastevent;
 
@@ -482,20 +482,16 @@ process_suspend(struct process *p)
 
 
 
-  struct process *tmp_p;
-  for(tmp_p = process_list; tmp_p != NULL; tmp_p = tmp_p->next) {
-    if(tmp_p->state == PROCESS_STATE_SUSPENDED) {
+  struct process *q;
+  for(q = process_list; q != NULL; q = q->next) {
+    if(q->state == PROCESS_STATE_SUSPENDED) {
       printf("\nERROR SUSPENDED PROCESS HAS ALREADY EXISTED\n\n");
       return PROCESS_ERR_SUSPEND;
     }
 
-    if(tmp_p->state == PROCESS_STATE_CALLED) {
-      //process_current->state = PROCESS_STATE_SUSPENDED;
-      //process_preempted = process_current;
-      //p->state = PROCESS_STATE_CALLED;
-      //process_current = p;
-      process_preempted = tmp_p;
-      tmp_p->state = PROCESS_STATE_SUSPENDED;
+    if(q->state == PROCESS_STATE_CALLED) {
+      process_preempted = q;
+      q->state = PROCESS_STATE_SUSPENDED;
       process_current = p;
       p->state = PROCESS_STATE_CALLED;
     } /* if end */
@@ -528,23 +524,20 @@ process_resume(struct process *p)
   printf("\nresume\n");
   printf("process_current: %s - state: %d\n", PROCESS_NAME_STRING(PROCESS_CURRENT()), process_current->state);
   printf("process_preempted: %s - state: %d\n", PROCESS_NAME_STRING(process_preempted), process_preempted->state);
+  //printf("process_realtime: %s - state: %d\n", PROCESS_NAME_STRING(process_realtime), process_realtime->state);
   printf("resume\n\n");
 
 
 
   //int suspend_count = 0;
 
-  struct process *tmp_p;
-  for(tmp_p = process_list; tmp_p != NULL; tmp_p = tmp_p->next) {
-    if(tmp_p->state == PROCESS_STATE_SUSPENDED) {
-      //p = tmp_p;
+  struct process *q;
+  for(q = process_list; q != NULL; q = q->next) {
+    if(q->state == PROCESS_STATE_SUSPENDED) {
+      //p = q;
       //suspend_count = suspend_count + 1;
-      //process_current->state = PROCESS_STATE_RUNNING;
-      //process_current = process_preempted;
-      //process_current->state = PROCESS_STATE_CALLED;
-      //process_preempted = NULL;
-      process_current = tmp_p;
-      tmp_p->state = PROCESS_STATE_CALLED;
+      process_current = q;
+      q->state = PROCESS_STATE_CALLED;
       process_preempted = NULL;
       p->state = PROCESS_STATE_RUNNING;
     } /* if end */
@@ -555,6 +548,7 @@ process_resume(struct process *p)
   printf("\nresume\n");
   printf("process_current: %s - state: %d\n", PROCESS_NAME_STRING(PROCESS_CURRENT()), process_current->state);
   printf("process_preempted: %s - state: %d\n", PROCESS_NAME_STRING(process_preempted), process_preempted->state);
+  //printf("process_realtime: %s - state: %d\n", PROCESS_NAME_STRING(process_realtime), process_realtime->state);
   printf("resume\n\n");
 
 

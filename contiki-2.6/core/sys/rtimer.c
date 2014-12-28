@@ -48,6 +48,8 @@
 #include "sys/rtimer.h"
 #include "contiki.h"
 
+#define PROCESS_STATE_CALLED    2
+
 #define DEBUG 0
 #if DEBUG
 #include <stdio.h>
@@ -57,6 +59,7 @@
 #endif
 
 static struct rtimer *next_rtimer;
+//static struct process *realtime_process = NULL;
 
 /*---------------------------------------------------------------------------*/
 void
@@ -70,10 +73,24 @@ rtimer_set(struct rtimer *rtimer, rtimer_clock_t time,
 	   rtimer_clock_t duration,
 	   rtimer_callback_t func, void *ptr)
 {
+  static int set_count = 0;
+
+  struct process *p; 
+  for(p = process_list; p != NULL; p = p->next) {
+    if((p->state == PROCESS_STATE_CALLED)  && (set_count == 1)) {
+      process_realtime = p;
+    } /* if end */
+  } /* for end  */
+
+  set_count = set_count + 1;
+  
+  
+   
   int first = 0;
 
-  //PRINTF("rtimer_set time %d\n", time);
   printf("rtimer_set time %d\n", time);
+  printf("rtimer process current: %s\n", PROCESS_NAME_STRING(process_current));
+  //printf("rtimer realtime process: %s\n\n", PROCESS_NAME_STRING(process_realtime));
 
   if(next_rtimer == NULL) {
     first = 1;
@@ -94,6 +111,13 @@ rtimer_set(struct rtimer *rtimer, rtimer_clock_t time,
 void
 rtimer_run_next(void)
 {
+  printf("\n---------------in rtimer-----------------\n");
+  struct process *tmp_p;
+  for(tmp_p = process_list; tmp_p != NULL; tmp_p = tmp_p->next) {
+    printf("process: %s - state: %d\n", PROCESS_NAME_STRING(tmp_p), tmp_p->state);
+  }
+  printf("\n---------------in rtimer-----------------\n");
+
   struct rtimer *t;
   if(next_rtimer == NULL) {
     return;
@@ -106,4 +130,16 @@ rtimer_run_next(void)
   }
   return;
 }
+/*---------------------------------------------------------------------------*/
+//char
+//suspend_flag_on()
+//{
+//  return SUSPEND_ON;
+//}
+/*---------------------------------------------------------------------------*/
+//char
+//suspend_flag_off()
+//{
+//  return SUSPEND_OFF;
+//}
 /*---------------------------------------------------------------------------*/
