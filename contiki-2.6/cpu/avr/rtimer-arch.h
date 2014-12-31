@@ -34,6 +34,7 @@
 #define __RTIMER_ARCH_H__
 
 #include <avr/interrupt.h>
+#include "sys/process.h" 
 
 /* Nominal ARCH_SECOND is F_CPU/prescaler, e.g. 8000000/1024 = 7812
  * Other prescaler values (1, 8, 64, 256) will give greater precision
@@ -67,9 +68,57 @@
 #define rtimer_arch_now() (0)
 #endif
 
+
+
+
+/**
+ * \name Return values
+ * @{
+ */
+
+/**
+ * \brief      Return value indicating that an operation was successful.
+ *
+ *             This value is returned to indicate that an operation
+ *             was successful.
+ */
+#define PROCESS_ERR_OK        0
+/**
+ * \brief      Return value indicating that the event queue was full.
+ *
+ *             This value is returned from process_post() to indicate
+ *             that the event queue was full and that an event could
+ *             not be posted.
+ */
+#define PROCESS_ERR_FULL      1
+/**
+ * \brief      Return value indicating that the suspended process has already existed.
+ */
+#define PROCESS_ERR_SUSPEND   2
+/**
+ * \brief      Return value indicating that the suspended process was none.
+ */
+#define PROCESS_ERR_RESUME    3
+/* @} */
+
+
+
+#define MAX_NUM_STACKS  2
+#define STACK_SIZE      128
+uint8_t main_thread_stack[STACK_SIZE];
+uint8_t sub_thread_stack[STACK_SIZE];
+
+
+//CCIF extern uint8_t init_sub_stack(struct process *p,
+//            char *task_ptr, uint8_t *buffer_ptr, uint16_t stack_size);
+int process_suspend(struct process *p);
+int process_resume(struct process *p);
+
+
 void rtimer_arch_sleep(rtimer_clock_t howlong);
 //#endif /* __RTIMER_ARCH_H__ */
 
+//char suspend_flag;
 
 /*-----------------------------------*/
 //   "lds r26,nrk_cur_task_TCB \n\t"
@@ -83,11 +132,118 @@ void rtimer_arch_sleep(rtimer_clock_t howlong);
 // push r1
 //   "lds     r26,nrk_kernel_stk_ptr      \n\t" \
 //   "lds     r27,nrk_kernel_stk_ptr+1    \n\t" 
+// push r1
+//   "lds     r26,os_task_stk_ptr      \n\t" \
+//   "lds     r27,os_task_stk_ptr+1    \n\t" 
+//  TODO
+//  between st x+ and ret
+//   "push    r1                          \n\t" \
+//   "ld      r1,-x                       \n\t" \
+//   "out __SP_H__, r27                   \n\t" \
+//   "out __SP_L__, r26                   \n\t" \
+//   "ret                                 \n\t" \
 //  TODO END
 //#define SAVE_CONTEXT()  \
 //asm volatile (  \
-//   "push    r0                          \n\t" \
-//   "in      r0, __SREG__                \n\t" \
+//   "push    r0                                  \n\t" \
+//   "in      r0, __SREG__                        \n\t" \
+//   "cli                                         \n\t" \
+//   "push    r0                                  \n\t" \
+//   "push    r1                                  \n\t" \
+//   "clr     r1                                  \n\t" \
+//   "push    r2                                  \n\t" \
+//   "push    r3                                  \n\t" \
+//   "push    r4                                  \n\t" \
+//   "push    r5                                  \n\t" \
+//   "push    r6                                  \n\t" \
+//   "push    r7                                  \n\t" \
+//   "push    r8                                  \n\t" \
+//   "push    r9                                  \n\t" \
+//   "push    r10                                 \n\t" \
+//   "push    r11                                 \n\t" \
+//   "push    r12                                 \n\t" \
+//   "push    r13                                 \n\t" \
+//   "push    r14                                 \n\t" \
+//   "push    r15                                 \n\t" \
+//   "push    r16                                 \n\t" \
+//   "push    r17                                 \n\t" \
+//   "push    r18                                 \n\t" \
+//   "push    r19                                 \n\t" \
+//   "push    r20                                 \n\t" \
+//   "push    r21                                 \n\t" \
+//   "push    r22                                 \n\t" \
+//   "push    r23                                 \n\t" \
+//   "push    r24                                 \n\t" \
+//   "push    r25                                 \n\t" \
+//   "push    r26                                 \n\t" \
+//   "push    r27                                 \n\t" \
+//   "push    r28                                 \n\t" \
+//   "push    r29                                 \n\t" \
+//   "push    r30                                 \n\t" \
+//   "push    r31                                 \n\t" \
+//   "lds     r26,stack_ptr      \n\t" \
+//   "lds     r27,stack_ptr+1    \n\t" \
+//   "in      r0,__SP_L__                         \n\t" \
+//   "st x+,  r0                                  \n\t" \
+//   "in      r0,__SP_H__                         \n\t" \
+//   "st x+,  r0                                  \n\t" \
+//);
+
+
+//   "lds r26,nrk_high_ready_TCB \n\t"
+//   "lds r27,nrk_high_ready_TCB+1 \n\t" 
+// top
+//   "lds     r26,PROCESS_EXECUTED_NEXT() \n\t" \
+//   "lds     r27,PROCESS_EXECUTED_NEXT()+1 \n\t" \
+//;x points to &OSTCB[x]
+//#define RESTORE_CONTEXT()   \
+//asm volatile (  \
+//   "lds     r26,stack_ptr      \n\t" \
+//   "lds     r27,stack_ptr+1    \n\t" \
+//   "ld      r28,x+                              \n\t" \
+//   "out __SP_L__, r28                           \n\t" \
+//   "ld      r29,x+                              \n\t" \
+//   "out __SP_H__, r29                           \n\t" \
+//   "pop     r31                                 \n\t" \
+//   "pop     r30                                 \n\t" \
+//   "pop     r29                                 \n\t" \
+//   "pop     r28                                 \n\t" \
+//   "pop     r27                                 \n\t" \
+//   "pop     r26                                 \n\t" \
+//   "pop     r25                                 \n\t" \
+//   "pop     r24                                 \n\t" \
+//   "pop     r23                                 \n\t" \
+//   "pop     r22                                 \n\t" \
+//   "pop     r21                                 \n\t" \
+//   "pop     r20                                 \n\t" \
+//   "pop     r19                                 \n\t" \
+//   "pop     r18                                 \n\t" \
+//   "pop     r17                                 \n\t" \
+//   "pop     r16                                 \n\t" \
+//   "pop     r15                                 \n\t" \
+//   "pop     r14                                 \n\t" \
+//   "pop     r13                                 \n\t" \
+//   "pop     r12                                 \n\t" \
+//   "pop     r11                                 \n\t" \
+//   "pop     r10                                 \n\t" \
+//   "pop     r9                                  \n\t" \
+//   "pop     r8                                  \n\t" \
+//   "pop     r7                                  \n\t" \
+//   "pop     r6                                  \n\t" \
+//   "pop     r5                                  \n\t" \
+//   "pop     r4                                  \n\t" \
+//   "pop     r3                                  \n\t" \
+//   "pop     r2                                  \n\t" \
+//   "pop     r1                                  \n\t" \
+//   "pop     r0                                  \n\t" \
+//   "out __SREG__, r0                            \n\t" \
+//   "pop     r0                                  \n\t" \
+//   "reti                                        \n\t" \
+//);
+
+
+//#define SAVE_CONTEXT()  \
+//asm volatile (  \
 //   "push    r0                          \n\t" \
 //   "push    r1                          \n\t" \
 //   "push    r2                          \n\t" \
@@ -120,32 +276,10 @@ void rtimer_arch_sleep(rtimer_clock_t howlong);
 //   "push    r29                         \n\t" \
 //   "push    r30                         \n\t" \
 //   "push    r31                         \n\t" \
-//   "lds     r26,process_current         \n\t" \
-//   "lds     r27,process_current+1       \n\t" \
-//   "in      r0,__SP_L__                 \n\t" \
-//   "st x+,  r0                          \n\t" \
-//   "in      r0,__SP_H__                 \n\t" \
-//   "st x+,  r0                          \n\t" \
-//   "push    r1                          \n\t" \
-//   "ld      r1,-x                       \n\t" \
-//   "out __SP_H__, r27                   \n\t" \
-//   "out __SP_L__, r26                   \n\t" \
-//   "ret                                 \n\t" \
 //);
 
-
-//   "lds r26,nrk_high_ready_TCB \n\t"
-//   "lds r27,nrk_high_ready_TCB+1 \n\t" 
-// top
-//   "lds     r26,PROCESS_EXECUTED_NEXT() \n\t" \
-//   "lds     r27,PROCESS_EXECUTED_NEXT()+1 \n\t" \
-//;x points to &OSTCB[x]
 //#define RESTORE_CONTEXT()   \
 //asm volatile (  \
-//   "ld      r28,x+                      \n\t" \
-//   "out __SP_L__, r28                   \n\t" \
-//   "ld      r29,x+                      \n\t" \
-//   "out __SP_H__, r29                   \n\t" \
 //   "pop     r31                         \n\t" \
 //   "pop     r30                         \n\t" \
 //   "pop     r29                         \n\t" \
@@ -178,83 +312,7 @@ void rtimer_arch_sleep(rtimer_clock_t howlong);
 //   "pop     r2                          \n\t" \
 //   "pop     r1                          \n\t" \
 //   "pop     r0                          \n\t" \
-//   "out __SREG__, r0                    \n\t" \
-//   "pop     r0                          \n\t" \
-//   "reti                                \n\t" \
 //);
-
-
-#define SAVE_CONTEXT()  \
-asm volatile (  \
-   "push    r0                          \n\t" \
-   "push    r1                          \n\t" \
-   "push    r2                          \n\t" \
-   "push    r3                          \n\t" \
-   "push    r4                          \n\t" \
-   "push    r5                          \n\t" \
-   "push    r6                          \n\t" \
-   "push    r7                          \n\t" \
-   "push    r8                          \n\t" \
-   "push    r9                          \n\t" \
-   "push    r10                         \n\t" \
-   "push    r11                         \n\t" \
-   "push    r12                         \n\t" \
-   "push    r13                         \n\t" \
-   "push    r14                         \n\t" \
-   "push    r15                         \n\t" \
-   "push    r16                         \n\t" \
-   "push    r17                         \n\t" \
-   "push    r18                         \n\t" \
-   "push    r19                         \n\t" \
-   "push    r20                         \n\t" \
-   "push    r21                         \n\t" \
-   "push    r22                         \n\t" \
-   "push    r23                         \n\t" \
-   "push    r24                         \n\t" \
-   "push    r25                         \n\t" \
-   "push    r26                         \n\t" \
-   "push    r27                         \n\t" \
-   "push    r28                         \n\t" \
-   "push    r29                         \n\t" \
-   "push    r30                         \n\t" \
-   "push    r31                         \n\t" \
-);
-
-#define RESTORE_CONTEXT()   \
-asm volatile (  \
-   "pop     r31                         \n\t" \
-   "pop     r30                         \n\t" \
-   "pop     r29                         \n\t" \
-   "pop     r28                         \n\t" \
-   "pop     r27                         \n\t" \
-   "pop     r26                         \n\t" \
-   "pop     r25                         \n\t" \
-   "pop     r24                         \n\t" \
-   "pop     r23                         \n\t" \
-   "pop     r22                         \n\t" \
-   "pop     r21                         \n\t" \
-   "pop     r20                         \n\t" \
-   "pop     r19                         \n\t" \
-   "pop     r18                         \n\t" \
-   "pop     r17                         \n\t" \
-   "pop     r16                         \n\t" \
-   "pop     r15                         \n\t" \
-   "pop     r14                         \n\t" \
-   "pop     r13                         \n\t" \
-   "pop     r12                         \n\t" \
-   "pop     r11                         \n\t" \
-   "pop     r10                         \n\t" \
-   "pop     r9                          \n\t" \
-   "pop     r8                          \n\t" \
-   "pop     r7                          \n\t" \
-   "pop     r6                          \n\t" \
-   "pop     r5                          \n\t" \
-   "pop     r4                          \n\t" \
-   "pop     r3                          \n\t" \
-   "pop     r2                          \n\t" \
-   "pop     r1                          \n\t" \
-   "pop     r0                          \n\t" \
-);
 
 
 #endif /* __RTIMER_ARCH_H__ */

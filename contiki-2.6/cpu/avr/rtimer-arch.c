@@ -49,7 +49,21 @@
 
 #include "sys/energest.h"
 #include "sys/rtimer.h"
+#include "sys/process.h"
 #include "rtimer-arch.h"
+
+
+
+
+#define PROCESS_STATE_NONE        0
+#define PROCESS_STATE_RUNNING     1
+#define PROCESS_STATE_CALLED      2
+#define PROCESS_STATE_WAITING     3
+#define PROCESS_STATE_READY       4
+#define PROCESS_STATE_SUSPENDED   5
+#define PROCESS_STATE_FINISHED    6
+
+
 
 #if defined(__AVR_ATmega1281__) || defined(__AVR_ATmega1284P__)
 #define ETIMSK TIMSK3
@@ -85,11 +99,577 @@ extern uint8_t debugflowsize,debugflow[DEBUGFLOWSIZE];
 #define DEBUGFLOW(c)
 #endif
 
+/* this value shows "1" when called process is none */
+static int suspend_flag = 0;
+
+volatile static int chcontext_count = 0; // +
+int num_stacks = 0;
+
+volatile uint8_t *process_stack_ptr = 0;
+
+/*---------------------------------------------------------------------------*/
+#define SAVE_CONTEXT()  \
+asm volatile (  \
+   "push    r0                              \n\t" \
+   "in      r0, __SREG__                    \n\t" \
+   "cli                                     \n\t" \
+   "push    r0                              \n\t" \
+   "push    r1                              \n\t" \
+   "clr     r1                              \n\t" \
+   "push    r2                              \n\t" \
+   "push    r3                              \n\t" \
+   "push    r4                              \n\t" \
+   "push    r5                              \n\t" \
+   "push    r6                              \n\t" \
+   "push    r7                              \n\t" \
+   "push    r8                              \n\t" \
+   "push    r9                              \n\t" \
+   "push    r10                             \n\t" \
+   "push    r11                             \n\t" \
+   "push    r12                             \n\t" \
+   "push    r13                             \n\t" \
+   "push    r14                             \n\t" \
+   "push    r15                             \n\t" \
+   "push    r16                             \n\t" \
+   "push    r17                             \n\t" \
+   "push    r18                             \n\t" \
+   "push    r19                             \n\t" \
+   "push    r20                             \n\t" \
+   "push    r21                             \n\t" \
+   "push    r22                             \n\t" \
+   "push    r23                             \n\t" \
+   "push    r24                             \n\t" \
+   "push    r25                             \n\t" \
+   "push    r26                             \n\t" \
+   "push    r27                             \n\t" \
+   "push    r28                             \n\t" \
+   "push    r29                             \n\t" \
+   "push    r30                             \n\t" \
+   "push    r31                             \n\t" \
+   "lds     r26,process_stack_ptr           \n\t" \
+   "lds     r27,process_stack_ptr+1         \n\t" \
+   "in      r0,__SP_L__                     \n\t" \
+   "st x+,  r0                              \n\t" \
+   "in      r0,__SP_H__                     \n\t" \
+   "st x+,  r0                              \n\t" \
+);
+/*---------------------------------------------------------------------------*/
+#define RESTORE_CONTEXT()   \
+asm volatile (  \
+   "lds     r26,process_stack_ptr           \n\t" \
+   "lds     r27,process_stack_ptr+1         \n\t" \
+   "ld      r28,x+                          \n\t" \
+   "out __SP_L__, r28                       \n\t" \
+   "ld      r29,x+                          \n\t" \
+   "out __SP_H__, r29                       \n\t" \
+   "pop     r31                             \n\t" \
+   "pop     r30                             \n\t" \
+   "pop     r29                             \n\t" \
+   "pop     r28                             \n\t" \
+   "pop     r27                             \n\t" \
+   "pop     r26                             \n\t" \
+   "pop     r25                             \n\t" \
+   "pop     r24                             \n\t" \
+   "pop     r23                             \n\t" \
+   "pop     r22                             \n\t" \
+   "pop     r21                             \n\t" \
+   "pop     r20                             \n\t" \
+   "pop     r19                             \n\t" \
+   "pop     r18                             \n\t" \
+   "pop     r17                             \n\t" \
+   "pop     r16                             \n\t" \
+   "pop     r15                             \n\t" \
+   "pop     r14                             \n\t" \
+   "pop     r13                             \n\t" \
+   "pop     r12                             \n\t" \
+   "pop     r11                             \n\t" \
+   "pop     r10                             \n\t" \
+   "pop     r9                              \n\t" \
+   "pop     r8                              \n\t" \
+   "pop     r7                              \n\t" \
+   "pop     r6                              \n\t" \
+   "pop     r5                              \n\t" \
+   "pop     r4                              \n\t" \
+   "pop     r3                              \n\t" \
+   "pop     r2                              \n\t" \
+   "pop     r1                              \n\t" \
+   "pop     r0                              \n\t" \
+   "out __SREG__, r0                        \n\t" \
+   "pop     r0                              \n\t" \
+);
+/*---------------------------------------------------------------------------*/
+int
+process_suspend(struct process *p)
+{
+  struct process *q;
+
+  if(process_preempted != NULL) {
+    printf("\nERROR SUSPENDED PROCESS HAS ALREADY EXISTED\n\n");
+    return PROCESS_ERR_SUSPEND;
+  }
+
+  if(process_current->state == PROCESS_STATE_RUNNING) {
+    printf("\nRUNNING PROCESS IS NONE\n\n");
+
+    /*
+     *
+     */
+    process_current = p;
+    p->state = PROCESS_STATE_CALLED;
+    process_stack_ptr = p->stack_ptr;
+
+    suspend_flag = 1;
+
+    return PROCESS_ERR_OK;
+  }
+
+
+
+  printf("\nsuspended\n");
+  printf("process_current: %s - state: %d\n", PROCESS_NAME_STRING(PROCESS_CURRENT()), process_current->state);
+  printf("process_preempted: %s - state: %d\n", PROCESS_NAME_STRING(process_preempted), process_preempted->state);
+  //printf("process_realtime: %s - state: %d\n", PROCESS_NAME_STRING(process_realtime), process_realtime->state);
+  printf("suspended\n\n");
+
+
+
+  for(q = process_list; q != NULL; q = q->next) {
+    if(q->state == PROCESS_STATE_SUSPENDED) {
+      printf("\nERROR SUSPENDED PROCESS HAS ALREADY EXISTED\n\n");
+      return PROCESS_ERR_SUSPEND;
+    }
+
+    if(q->state == PROCESS_STATE_CALLED) {
+      process_preempted = q;
+      q->state = PROCESS_STATE_SUSPENDED;
+      process_current = p;
+      p->state = PROCESS_STATE_CALLED;
+      process_stack_ptr = p->stack_ptr;
+    } /* if end */
+  } /* for end */
+
+
+
+  printf("\nsuspended\n");
+  printf("process_current: %s - state: %d\n", PROCESS_NAME_STRING(PROCESS_CURRENT()), process_current->state);
+  printf("process_preempted: %s - state: %d\n", PROCESS_NAME_STRING(process_preempted), process_preempted->state);
+  //printf("process_realtime: %s - state: %d\n", PROCESS_NAME_STRING(process_realtime), process_realtime->state);
+  printf("suspended\n\n");
+
+
+
+  return PROCESS_ERR_OK;
+}
+/*---------------------------------------------------------------------------*/
+int
+process_resume(struct process *p)
+{
+  struct process *q;
+
+  if(suspend_flag == 1) {
+    for(q = process_list; q != NULL; q = q->next) {
+      if(q->state == PROCESS_STATE_CALLED) {
+        q->state = PROCESS_STATE_RUNNING;
+      } /* if end */
+    } /* for end  */
+
+    suspend_flag = 0;
+    return PROCESS_ERR_OK;
+  }
+
+  // TODO call init change stack function
+  if(process_preempted == NULL) {
+    printf("\nERROR PREEMPTED PROCESS IS NONE\n\n");
+    return PROCESS_ERR_RESUME;
+  }
+
+
+
+  printf("\nresume\n");
+  printf("process_current: %s - state: %d\n", PROCESS_NAME_STRING(PROCESS_CURRENT()), process_current->state);
+  printf("process_preempted: %s - state: %d\n", PROCESS_NAME_STRING(process_preempted), process_preempted->state);
+  //printf("process_realtime: %s - state: %d\n", PROCESS_NAME_STRING(process_realtime), process_realtime->state);
+  printf("resume\n\n");
+
+
+
+  for(q = process_list; q != NULL; q = q->next) {
+    if(q->state == PROCESS_STATE_SUSPENDED) {
+      //p = q;
+      //suspend_count = suspend_count + 1;
+      process_current = q;
+      q->state = PROCESS_STATE_CALLED;
+      process_stack_ptr = q->stack_ptr;
+      process_preempted = NULL;
+      p->state = PROCESS_STATE_RUNNING;
+    } /* if end */
+  } /* for end  */
+
+
+
+  printf("\nresume\n");
+  printf("process_current: %s - state: %d\n", PROCESS_NAME_STRING(PROCESS_CURRENT()), process_current->state);
+  printf("process_preempted: %s - state: %d\n", PROCESS_NAME_STRING(process_preempted), process_preempted->state);
+  //printf("process_realtime: %s - state: %d\n", PROCESS_NAME_STRING(process_realtime), process_realtime->state);
+  printf("resume\n\n");
+
+
+
+  //if(suspend_count != 1) {
+  //    printf("\nERROR SUSPENDED PROCESS IS NONE OR TOO MANY\n\n");
+  //    return PROCESS_ERR_RESUME;
+  //}
+
+  //printf("process_current1: %s - state: %d\n", PROCESS_NAME_STRING(PROCESS_CURRENT()), process_current->state);
+
+  return PROCESS_ERR_OK;
+}
+/*---------------------------------------------------------------------------*/
+uint8_t 
+move_stack_ptr(uint8_t *stack_ptr)
+{
+  /* simulate stack after a call to savecontext */
+  *stack_ptr = 0x00;  //necessary for reti to line up
+  stack_ptr--;
+  *stack_ptr = 0x00;  //r0
+  stack_ptr--;
+  *stack_ptr = 0x00;  //r1 wants to always be 0
+  stack_ptr--;
+  *stack_ptr = 0x02;  //r2
+  stack_ptr--;
+  *stack_ptr = 0x03;  //r3
+  stack_ptr--;
+  *stack_ptr = 0x04;  //r4
+  stack_ptr--;
+  *stack_ptr = 0x05;  //r5
+  stack_ptr--;
+  *stack_ptr = 0x06;  //r6
+  stack_ptr--;
+  *stack_ptr = 0x07;  //r7
+  stack_ptr--;
+  *stack_ptr = 0x08;  //r8
+  stack_ptr--;
+  *stack_ptr = 0x09;  //r9
+  stack_ptr--;
+  *stack_ptr = 0x10;  //r10
+  stack_ptr--;
+  *stack_ptr = 0x11;  //r11
+  stack_ptr--;
+  *stack_ptr = 0x12;  //r12
+  stack_ptr--;
+  *stack_ptr = 0x13;  //r13
+  stack_ptr--;
+  *stack_ptr = 0x14;  //r14
+  stack_ptr--;
+  *stack_ptr = 0x15;  //r15
+  stack_ptr--;
+  *stack_ptr = 0x16;  //r16
+  stack_ptr--;
+  *stack_ptr = 0x17;  //r17
+  stack_ptr--;
+  *stack_ptr = 0x18;  //r18
+  stack_ptr--;
+  *stack_ptr = 0x19;  //r19
+  stack_ptr--;
+  *stack_ptr = 0x20;  //r20
+  stack_ptr--;
+  *stack_ptr = 0x21;  //r21
+  stack_ptr--;
+  *stack_ptr = 0x22;  //r22
+  stack_ptr--;
+  *stack_ptr = 0x23;  //r23
+  stack_ptr--;
+  *stack_ptr = 0x24;  //r24
+  stack_ptr--;
+  *stack_ptr = 0x25;  //r25
+  stack_ptr--;
+  *stack_ptr = 0x26;  //r26
+  stack_ptr--;
+  *stack_ptr = 0x27;  //r27
+  stack_ptr--;
+  *stack_ptr = 0x28;  //r28
+  stack_ptr--;
+  *stack_ptr = 0x29;  //r29
+  stack_ptr--;
+  *stack_ptr = 0x30;  //r30
+  stack_ptr--;
+  *stack_ptr = 0x31;  //r31
+  stack_ptr--;
+
+  return 1;
+}
+/*---------------------------------------------------------------------------*/
+uint8_t
+init_main_stack(struct process *p, void *task_ptr, uint8_t *buffer_ptr, uint16_t stack_size)
+{
+  printf("\nStart of init_main_stack\n\n");
+
+  unsigned int this_address;
+
+  /* stack grows down in memory */
+  uint8_t *stack_ptr = buffer_ptr + stack_size - 1;
+
+
+  if (num_stacks > MAX_NUM_STACKS) {
+    /* error, tcb is not big enough, need to increase max_numtasks in uik.h */
+    return -1;
+  }
+
+
+
+  /*  setup parameters
+   *  "initialized" could be changed to ready without much effect, but UIKRun would
+   *  not have to be called
+   */
+  //tcb[numtasks].state = initialized;
+  //tcb[numtasks].delay = 0;
+
+
+
+
+  /* place a few known bytes on the bottom - useful for debugging */
+  /* tcb[numtasks].stack_lptr = stack_ptr; */
+  // TODO
+  //tcb[numtasks].stack_ptr = stack_ptr - 1;
+  p->stack_ptr = stack_ptr - 1;
+
+  /* will be location of most significant part of stack address */
+  *stack_ptr = 0x11;
+  stack_ptr--;
+  /* least significant byte of stack address */
+  *stack_ptr = 0x22;
+  stack_ptr--;
+  *stack_ptr = 0x33;
+  stack_ptr--;
+
+  /* address of the executing function */
+  this_address = task_ptr;
+  *stack_ptr   = this_address & 0x00ff;
+  stack_ptr--;
+  this_address >>= 8;
+  *stack_ptr = this_address & 0x00ff;
+  stack_ptr--;
+
+  /* simulate stack after a call to savecontext */
+  *stack_ptr = 0x00;  //necessary for reti to line up
+  stack_ptr--;
+  *stack_ptr = 0x00;  //r0
+  stack_ptr--;
+  *stack_ptr = 0x00;  //r1 wants to always be 0
+  stack_ptr--;
+  *stack_ptr = 0x02;  //r2
+  stack_ptr--;
+  *stack_ptr = 0x03;  //r3
+  stack_ptr--;
+  *stack_ptr = 0x04;  //r4
+  stack_ptr--;
+  *stack_ptr = 0x05;  //r5
+  stack_ptr--;
+  *stack_ptr = 0x06;  //r6
+  stack_ptr--;
+  *stack_ptr = 0x07;  //r7
+  stack_ptr--;
+  *stack_ptr = 0x08;  //r8
+  stack_ptr--;
+  *stack_ptr = 0x09;  //r9
+  stack_ptr--;
+  *stack_ptr = 0x10;  //r10
+  stack_ptr--;
+  *stack_ptr = 0x11;  //r11
+  stack_ptr--;
+  *stack_ptr = 0x12;  //r12
+  stack_ptr--;
+  *stack_ptr = 0x13;  //r13
+  stack_ptr--;
+  *stack_ptr = 0x14;  //r14
+  stack_ptr--;
+  *stack_ptr = 0x15;  //r15
+  stack_ptr--;
+  *stack_ptr = 0x16;  //r16
+  stack_ptr--;
+  *stack_ptr = 0x17;  //r17
+  stack_ptr--;
+  *stack_ptr = 0x18;  //r18
+  stack_ptr--;
+  *stack_ptr = 0x19;  //r19
+  stack_ptr--;
+  *stack_ptr = 0x20;  //r20
+  stack_ptr--;
+  *stack_ptr = 0x21;  //r21
+  stack_ptr--;
+  *stack_ptr = 0x22;  //r22
+  stack_ptr--;
+  *stack_ptr = 0x23;  //r23
+  stack_ptr--;
+  *stack_ptr = 0x24;  //r24
+  stack_ptr--;
+  *stack_ptr = 0x25;  //r25
+  stack_ptr--;
+  *stack_ptr = 0x26;  //r26
+  stack_ptr--;
+  *stack_ptr = 0x27;  //r27
+  stack_ptr--;
+  *stack_ptr = 0x28;  //r28
+  stack_ptr--;
+  *stack_ptr = 0x29;  //r29
+  stack_ptr--;
+  *stack_ptr = 0x30;  //r30
+  stack_ptr--;
+  *stack_ptr = 0x31;  //r31
+  stack_ptr--;
+
+  /* store the address of the stack */
+  this_address = stack_ptr;
+  *(p->stack_ptr) = (this_address & 0xff);
+  this_address >>= 8;
+  *(p->stack_ptr + 1) = (this_address & 0xff);
+
+  num_stacks++;
+
+  printf("\nEnd of init_main_stack\n\n");
+
+  /* return the task id */
+  //return (num_stacks - 1);
+  return num_stacks;
+}
+/*---------------------------------------------------------------------------*/
+uint8_t
+init_sub_stack(struct process *p, void *task_ptr, uint8_t *buffer_ptr, uint16_t stack_size)
+{
+  printf("\nStart of init_sub_stack\n\n");
+
+  unsigned int this_address;
+
+  /* stack grows down in memory */
+  uint8_t *stack_ptr = buffer_ptr + stack_size - 1;
+
+
+  if (num_stacks > MAX_NUM_STACKS) {
+    /* error, tcb is not big enough, need to increase max_numtasks in uik.h */
+    return -1;
+  }
+
+
+
+  /*  setup parameters
+   *  "initialized" could be changed to ready without much effect, but UIKRun would
+   *  not have to be called
+   */
+  //tcb[numtasks].state = initialized;
+  //tcb[numtasks].delay = 0;
+
+
+
+
+  /* place a few known bytes on the bottom - useful for debugging */
+  /* tcb[numtasks].stack_lptr = stack_ptr; */
+  // TODO
+  //tcb[numtasks].stack_ptr = stack_ptr - 1;
+  p->stack_ptr = stack_ptr - 1;
+
+  /* will be location of most significant part of stack address */
+  *stack_ptr = 0x11;
+  stack_ptr--;
+  /* least significant byte of stack address */
+  *stack_ptr = 0x22;
+  stack_ptr--;
+  *stack_ptr = 0x33;
+  stack_ptr--;
+
+  /* address of the executing function */
+  this_address = task_ptr;
+  *stack_ptr   = this_address & 0x00ff;
+  stack_ptr--;
+  this_address >>= 8;
+  *stack_ptr = this_address & 0x00ff;
+  stack_ptr--;
+
+  /* simulate stack after a call to savecontext */
+  *stack_ptr = 0x00;  //necessary for reti to line up
+  stack_ptr--;
+  *stack_ptr = 0x00;  //r0
+  stack_ptr--;
+  *stack_ptr = 0x00;  //r1 wants to always be 0
+  stack_ptr--;
+  *stack_ptr = 0x02;  //r2
+  stack_ptr--;
+  *stack_ptr = 0x03;  //r3
+  stack_ptr--;
+  *stack_ptr = 0x04;  //r4
+  stack_ptr--;
+  *stack_ptr = 0x05;  //r5
+  stack_ptr--;
+  *stack_ptr = 0x06;  //r6
+  stack_ptr--;
+  *stack_ptr = 0x07;  //r7
+  stack_ptr--;
+  *stack_ptr = 0x08;  //r8
+  stack_ptr--;
+  *stack_ptr = 0x09;  //r9
+  stack_ptr--;
+  *stack_ptr = 0x10;  //r10
+  stack_ptr--;
+  *stack_ptr = 0x11;  //r11
+  stack_ptr--;
+  *stack_ptr = 0x12;  //r12
+  stack_ptr--;
+  *stack_ptr = 0x13;  //r13
+  stack_ptr--;
+  *stack_ptr = 0x14;  //r14
+  stack_ptr--;
+  *stack_ptr = 0x15;  //r15
+  stack_ptr--;
+  *stack_ptr = 0x16;  //r16
+  stack_ptr--;
+  *stack_ptr = 0x17;  //r17
+  stack_ptr--;
+  *stack_ptr = 0x18;  //r18
+  stack_ptr--;
+  *stack_ptr = 0x19;  //r19
+  stack_ptr--;
+  *stack_ptr = 0x20;  //r20
+  stack_ptr--;
+  *stack_ptr = 0x21;  //r21
+  stack_ptr--;
+  *stack_ptr = 0x22;  //r22
+  stack_ptr--;
+  *stack_ptr = 0x23;  //r23
+  stack_ptr--;
+  *stack_ptr = 0x24;  //r24
+  stack_ptr--;
+  *stack_ptr = 0x25;  //r25
+  stack_ptr--;
+  *stack_ptr = 0x26;  //r26
+  stack_ptr--;
+  *stack_ptr = 0x27;  //r27
+  stack_ptr--;
+  *stack_ptr = 0x28;  //r28
+  stack_ptr--;
+  *stack_ptr = 0x29;  //r29
+  stack_ptr--;
+  *stack_ptr = 0x30;  //r30
+  stack_ptr--;
+  *stack_ptr = 0x31;  //r31
+  stack_ptr--;
+
+  /* store the address of the stack */
+  this_address = stack_ptr;
+  *(p->stack_ptr) = (this_address & 0xff);
+  this_address >>= 8;
+  *(p->stack_ptr + 1) = (this_address & 0xff);
+
+  num_stacks++;
+
+  printf("\nEnd of init_sub_stack\n\n");
+
+  /* return the task id */
+  //return (num_stacks - 1);
+  return num_stacks;
+}
 /*---------------------------------------------------------------------------*/
 #if defined(TCNT3) && RTIMER_ARCH_PRESCALER
 ISR (TIMER3_COMPA_vect) {
   printf("\n\n---------------call ISR3---------------\n\n");
-  //SAVE_CONTEXT();
   DEBUGFLOW('/');
   ENERGEST_ON(ENERGEST_TYPE_IRQ);
 
@@ -97,20 +677,68 @@ ISR (TIMER3_COMPA_vect) {
   ETIMSK &= ~((1 << OCIE3A) | (1 << OCIE3B) | (1 << TOIE3) |
       (1 << TICIE3) | (1 << OCIE3C));
 
-#if RTIMER_CONF_NESTED_INTERRUPTS
+#if RTIMER_CONF_NESTED_INTERRUPTS /* default: this is not used */
   /* Enable nested interrupts. Allows radio interrupt during rtimer interrupt. */
   /* All interrupts are enabled including recursive rtimer, so use with caution */
   sei();
 #endif
+
+
+
+  /* interruption is here */
+  struct process *p;
+  for(p = process_list; p != NULL; p = p->next) {
+    //if(p->state == PROCESS_STATE_CALLED) {
+    if(p->id == 2) {
+      init_main_stack(p, p->pt.lc, main_thread_stack, STACK_SIZE);
+      process_stack_ptr = p->stack_ptr;
+    } /* if end */
+  } /* for end  */
+
+  SAVE_CONTEXT();
+  printf("saved main\n");
+
+  for(p = process_list; p != NULL; p = p->next) {
+    //if(p->state == PROCESS_STATE_CALLED) {
+    if(p->type == REALTIME_TASK) {
+      process_stack_ptr = p->stack_ptr;
+    } /* if end */
+  } /* for end  */
+
+  RESTORE_CONTEXT();
+  printf("restore sub\n");
+
+
 
   /* Call rtimer callback */
   printf("start rtimer next\n");
   rtimer_run_next();
   printf("finish rtimer next\n");
 
+
+
+
+  /* interruption is here */
+  SAVE_CONTEXT();
+  printf("saved sub\n");
+
+  /* interruption is here */
+  for(p = process_list; p != NULL; p = p->next) {
+    //if(p->state == PROCESS_STATE_CALLED) {
+    if(p->id == 2) {
+      //init_main_stack(p, p->pt.lc, main_thread_stack, STACK_SIZE);
+      process_stack_ptr = p->stack_ptr;
+    } /* if end */
+  } /* for end  */
+
+  RESTORE_CONTEXT();
+  printf("restore main\n");
+
+
+
+
   ENERGEST_OFF(ENERGEST_TYPE_IRQ);
   DEBUGFLOW('\\');
-  //RESTORE_CONTEXT();
   printf("\n\n---------------end ISR3---------------\n\n");
 }
 
@@ -205,14 +833,155 @@ rtimer_arch_init(void)
 void
 rtimer_arch_schedule(rtimer_clock_t t)
 {
-    printf("start rtimer_arch_schedule\n");
+  printf("\nstart rtimer_arch_schedule\n\n");
 #if RTIMER_ARCH_PRESCALER
   /* Disable interrupts (store old state) */
   uint8_t sreg;
   sreg = SREG;
   cli ();
   DEBUGFLOW(':');
-#ifdef TCNT3
+
+
+  
+
+  //struct process *p;
+
+  //if(chcontext_count % 2 == 0) {
+  //  for(p = process_list; p != NULL; p = p->next) {
+  //    //if(p->state == PROCESS_STATE_CALLED) {
+  //    if(p->id == 2) {
+  //      //init_main_stack(p, p->pt.lc, main_thread_stack, STACK_SIZE);
+  //      process_stack_ptr = p->stack_ptr;
+
+  //      //if(chcontext_count == 0) {
+  //      //  RESTORE_CONTEXT();
+  //      //}
+  //    } /* if end */
+  //  } /* for end  */
+  //}
+  //else if(chcontext_count % 2 == 1) {
+  //  for(p = process_list; p != NULL; p = p->next) {
+  //    if(p->type == REALTIME_TASK) {
+  //      process_stack_ptr = p->stack_ptr;
+
+  //      //if(chcontext_count == 1) {
+  //      //  RESTORE_CONTEXT();
+  //      //}
+  //    } /* if end */
+  //  } /* for end  */
+  //}
+
+  //printf("process_stack_ptr: %p - value: %d\n", &process_stack_ptr, process_stack_ptr);
+  //SAVE_CONTEXT();
+
+  //if(chcontext_count % 2 == 0) {
+  //  for(p = process_list; p != NULL; p = p->next) {
+  //    //if(p->state == PROCESS_STATE_CALLED) {
+  //    if(p->type == REALTIME_TASK) {
+  //      process_stack_ptr = p->stack_ptr;
+  //    } /* if end */
+  //  } /* for end  */
+  //}
+  //else if(chcontext_count % 2 == 1) {
+  //  for(p = process_list; p != NULL; p = p->next) {
+  //    //if(p->state == PROCESS_STATE_CALLED) {
+  //    if(p->id == 2) {
+  //      init_main_stack(p, p->pt.lc, main_thread_stack, STACK_SIZE);
+  //      process_stack_ptr = p->stack_ptr;
+  //    } /* if end */
+  //  } /* for end  */
+  //}
+
+  //printf("process_stack_ptr: %p - value: %d\n", &process_stack_ptr, process_stack_ptr);
+  //RESTORE_CONTEXT();
+  ////asm volatile ("reti");
+
+  //chcontext_count++;
+
+
+
+  /*
+   *
+   */
+  //struct process *p;
+
+  //if(chcontext_count == 0) {
+  //}
+  ///* sub threads data is saved */
+  //else if(chcontext_count % 2 == 0) {
+  //  printf("save sub\n");
+  //  SAVE_CONTEXT();
+
+  //  for(p = process_list; p != NULL; p = p->next) {
+  //    if(p->type == REALTIME_TASK) {
+  //      process_resume(p);
+  //      printf("resume process current: - state: %d - type: %d\n", 
+  //              process_current->state, process_current->type);
+  //    } /* if end */
+  //  } /* for end  */
+  //}
+  ///* main threads data is saved */
+  //else if(chcontext_count % 2 == 1) {
+  //  printf("save main\n");
+
+  //  for(p = process_list; p != NULL; p = p->next) {
+  //    //if(p->state == PROCESS_STATE_CALLED) {
+  //    if(p->id == process_current->id) {
+  //      init_main_stack(p, p->pt.lc, main_thread_stack, STACK_SIZE);
+  //      //printf("process_stack_ptr: %p - value: %d\n", &process_stack_ptr, process_stack_ptr);
+  //      process_stack_ptr = p->stack_ptr;
+  //      //printf("process_stack_ptr: %p - value: %d\n", &process_stack_ptr, process_stack_ptr);
+  //    } /* if end */
+  //  } /* for end  */
+
+  //  SAVE_CONTEXT();
+
+  //  for(p = process_list; p != NULL; p = p->next) {
+  //    //printf("process: - id: %d - state: %d - type: %d\n", 
+  //    //        p->id, p->state, p->type);
+  //    if(p->type == REALTIME_TASK) {
+  //      process_suspend(p);
+  //      //printf("suspend process current: - state: %d - type: %d\n", 
+  //      //        process_current->state, process_current->type);
+  //    } /* if end */
+  //  } /* for end  */
+  //}
+  //else {
+  //  printf("< UNEXPECTED ERROR HAS OCCURRED >\n");
+  //  return;
+  //}
+
+  //chcontext_count = chcontext_count + 1;
+  ///*
+  // *
+  // */
+
+
+
+  ///*
+  // *
+  // */
+  //if(chcontext_count == 1) {
+  //}
+  ////else if(chcontext_count % 2 == 1) {
+  ////  printf("2 restore\n");
+  ////  RESTORE_CONTEXT();
+  ////  printf("2 end restore\n");
+  ////  asm volatile ("reti");
+  ////}
+  //else {
+  //  printf("restore\n");
+  //  RESTORE_CONTEXT();
+  //  printf("end restore\n");
+  //}
+  /*
+   *
+   */
+
+
+
+
+#ifdef TCNT3    /* default: this is executed */
   /* Set compare register */
   OCR3A = t;
   /* Write 1s to clear all timer function flags */
@@ -232,7 +1001,8 @@ rtimer_arch_schedule(rtimer_clock_t t)
   /* Restore interrupt state */
   SREG = sreg;
 #endif /* RTIMER_ARCH_PRESCALER */
-    printf("finish rtimer_arch_schedule\n");
+
+  printf("\nfinish rtimer_arch_schedule\n\n");
 }
 
 #if RDC_CONF_MCU_SLEEP
@@ -343,117 +1113,3 @@ ISR(TIMER2_COMPA_vect)
 #endif /* !AVR_CONF_USE32KCRYSTAL */
 #endif /* RDC_CONF_MCU_SLEEP */
 /*---------------------------------------------------------------------------*/
-// This is the SUSPEND for the OS timer Tick
-//void SIG_OUTPUT_COMPARE0( void ) __attribute__ ( ( signal,naked ));
-//void SIG_OUTPUT_COMPARE0(void) {
-//   asm volatile (
-//   "push    r0 \n\t" \
-//   "in      r0, __sreg__  \n\t" \ 
-//   "push    r0  \n\t" \
-//   "push    r1 \n\t" \
-//   "push    r2 \n\t" \
-//   "push    r3 \n\t" \
-//   "push    r4 \n\t" \
-//   "push    r5 \n\t" \
-//   "push    r6 \n\t" \
-//   "push    r7 \n\t" \
-//   "push    r8 \n\t" \
-//   "push    r9 \n\t" \
-//   "push    r10 \n\t" \
-//   "push    r11 \n\t" \
-//   "push    r12 \n\t" \
-//   "push    r13 \n\t" \
-//   "push    r14 \n\t" \
-//   "push    r15 \n\t" \
-//   "push    r16 \n\t" \
-//   "push    r17 \n\t" \
-//   "push    r18 \n\t" \
-//   "push    r19 \n\t" \
-//   "push    r20 \n\t" \
-//   "push    r21 \n\t" \
-//   "push    r22 \n\t" \
-//   "push    r23 \n\t" \
-//   "push    r24 \n\t" \
-//   "push    r25 \n\t" \
-//   "push    r26 \n\t" \
-//   "push    r27 \n\t" \
-//   "push    r28 \n\t" \
-//   "push    r29 \n\t" \
-//   "push    r30 \n\t" \
-//   "push    r31 \n\t" \
-//   "lds r26,PROCESS_CURRENT() \n\t" \      //   "lds r26,nrk_cur_task_TCB \n\t" 
-//   "lds r27,PROCESS_CURRENT()+1 \n\t" \    //   "lds r27,nrk_cur_task_TCB+1 \n\t" 
-//   "in r0,__SP_L__ \n\t" \
-//   "st x+, r0 \n\t" \
-//   "in r0,__SP_H__ \n\t" \
-//   "st x+, r0 \n\t" \
-//   "push r1  \n\t" \
-//   "lds r26,nrk_kernel_stk_ptr \n\t" \
-//   "lds r27,nrk_kernel_stk_ptr+1 \n\t" \
-//   "ld r1,-x \n\t" \
-//   "out __SP_H__, r27 \n\t" \
-//   "out __SP_L__, r26 \n\t" \
-//   "ret\n\t" \
-//);
-//
-//
-//	
-//	return;  	
-//} 
-/*---------------------------------------------------------------------------*/
-//// get another task's register
-//void SIG_OUTPUT_COMPARE0( void ) __attribute__ ( ( signal,naked ));
-//void SIG_OUTPUT_COMPARE0(void) {
-//   asm volatile (
-//   "lds r27,PROCESS_EXECUTED_NEXT() \n\t" \    //   "lds r27,nrk_high_ready_TCB \n\t"
-//   "lds r27,PROCESS_EXECUTED_NEXT+1 \n\t" \  //   "lds r27,nrk_high_ready_TCB+1 \n\t" 
-//   
-//   	//;x points to &OSTCB[x]
-//   
-//   "ld r28,x+ \n\t" \
-//   "out __SP_L__, r28 \n\t" \
-//   "ld r29,x+ \n\t" \
-//   "out __SP_H__, r29 \n\t" \
-//   
-//   "pop     r31\n\t" \
-//   "pop     r30\n\t" \
-//   "pop     r29\n\t" \
-//   "pop     r28\n\t" \
-//   "pop     r27\n\t" \
-//   "pop     r26\n\t" \
-//   "pop     r25\n\t" \
-//   "pop     r24\n\t" \
-//   "pop     r23\n\t" \
-//   "pop     r22\n\t" \
-//   "pop     r21\n\t" \
-//   "pop     r20\n\t" \
-//   "pop     r19 \n\t" \
-//   "pop     r18 \n\t" \
-//   "pop     r17 \n\t" \
-//   "pop     r16 \n\t" \
-//   "pop     r15 \n\t" \
-//   "pop     r14 \n\t" \
-//   "pop     r13 \n\t" \
-//   "pop     r12 \n\t" \
-//   "pop     r11 \n\t" \
-//   "pop     r10 \n\t" \
-//   "pop     r9 \n\t" \
-//   "pop     r8 \n\t" \
-//   "pop     r7 \n\t" \
-//   "pop     r6 \n\t" \
-//   "pop     r5 \n\t" \
-//   "pop     r4 \n\t" \
-//   "pop     r3 \n\t" \
-//   "pop     r2 \n\t" \
-//   "pop     r1 \n\t" \
-//   "pop     r0 \n\t" \
-//   "out __SREG__, r0 \n\t" \
-//   "pop     r0 \n\t" \
-//	   
-//    	"reti \n\t" \ 
-//);
-//
-//
-//	
-//	return;  	
-//} 
