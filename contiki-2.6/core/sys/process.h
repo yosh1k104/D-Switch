@@ -89,6 +89,10 @@ typedef unsigned char process_num_events_t;
  * \brief      Return value indicating that the suspended process was none.
  */
 #define PROCESS_ERR_RESUME    3
+/**
+ * \brief      Return value indicating that all processes' state was PROCESS_STATE_RUNNING.
+ */
+#define PROCESS_ERR_RUNNING   4
 /* @} */
 
 #define PROCESS_NONE          NULL
@@ -110,8 +114,8 @@ typedef unsigned char process_num_events_t;
 #define PROCESS_EVENT_MAX             0x8a
 #define PROCESS_EVENT_PREEMPT         0x8b
 
-//#define REALTIME_TASK   1
-//#define NORMAL_TASK     2
+#define NORMAL_TASK         0
+#define REALTIME_TASK       1
 
 #define PROCESS_BROADCAST NULL
 #define PROCESS_ZOMBIE ((struct process *)0x1)
@@ -337,13 +341,14 @@ struct process {
   struct pt pt;
   unsigned char state, needspoll;
 
-  int8_t process_id;        // For quick reference later, -1 means not active 
+  uint8_t type;
+
+  uint8_t id;        // For quick reference later, -1 means not active 
   
   /* NRK_STK defined in "nano-RK/src/platform/micaZ/include/hal.h" */
-  uint8_t *os_task_stk_ptr;     /* Pointer to current top of stack */
-  uint8_t *os_tcb_stk_bottom;   /* Pointer to bottom of stack */
-  
-  //unsigned char process_type;
+  //uint8_t *os_task_stk_ptr;     /* Pointer to current top of stack */
+  //uint8_t *os_tcb_stk_bottom;   /* Pointer to bottom of stack */
+  uint8_t *stack_ptr;
 
   /* Inside TCB, all timer values stored in tick multiples to save memory */
   uint16_t  next_wakeup;
@@ -560,8 +565,17 @@ CCIF extern struct process *process_list;
 //CCIF extern int set_procress_type(struct process *p, unsigned char type);
 
 
-CCIF extern int processs_suspend(struct process *p);
-CCIF extern int processs_resume(struct process *p);
+//CCIF extern int processs_suspend(struct process *p);
+//CCIF extern int processs_resume(struct process *p);
+
+
+//#define MAX_NUM_STACKS  2 
+//#define STACK_SIZE      128
+//extern uint8_t main_thread_stack[STACK_SIZE];
+//uint8_t sub_thread_stack[STACK_SIZE];
+//
+//CCIF extern uint8_t init_processs_stack(struct process *p, 
+//            char *task_ptr, uint8_t *buffer_ptr, uint16_t stack_size);
 
 #endif /* __PROCESS_H__ */
 

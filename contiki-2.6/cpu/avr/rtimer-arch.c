@@ -198,6 +198,348 @@ asm volatile (  \
    "pop     r0                              \n\t" \
 );
 /*---------------------------------------------------------------------------*/
+//uint8_t 
+//move_stack_ptr(uint8_t *stack_ptr)
+//{
+//  /* simulate stack after a call to savecontext */
+//  *stack_ptr = 0x00;  //necessary for reti to line up
+//  stack_ptr--;
+//  *stack_ptr = 0x00;  //r0
+//  stack_ptr--;
+//  *stack_ptr = 0x00;  //r1 wants to always be 0
+//  stack_ptr--;
+//  *stack_ptr = 0x02;  //r2
+//  stack_ptr--;
+//  *stack_ptr = 0x03;  //r3
+//  stack_ptr--;
+//  *stack_ptr = 0x04;  //r4
+//  stack_ptr--;
+//  *stack_ptr = 0x05;  //r5
+//  stack_ptr--;
+//  *stack_ptr = 0x06;  //r6
+//  stack_ptr--;
+//  *stack_ptr = 0x07;  //r7
+//  stack_ptr--;
+//  *stack_ptr = 0x08;  //r8
+//  stack_ptr--;
+//  *stack_ptr = 0x09;  //r9
+//  stack_ptr--;
+//  *stack_ptr = 0x10;  //r10
+//  stack_ptr--;
+//  *stack_ptr = 0x11;  //r11
+//  stack_ptr--;
+//  *stack_ptr = 0x12;  //r12
+//  stack_ptr--;
+//  *stack_ptr = 0x13;  //r13
+//  stack_ptr--;
+//  *stack_ptr = 0x14;  //r14
+//  stack_ptr--;
+//  *stack_ptr = 0x15;  //r15
+//  stack_ptr--;
+//  *stack_ptr = 0x16;  //r16
+//  stack_ptr--;
+//  *stack_ptr = 0x17;  //r17
+//  stack_ptr--;
+//  *stack_ptr = 0x18;  //r18
+//  stack_ptr--;
+//  *stack_ptr = 0x19;  //r19
+//  stack_ptr--;
+//  *stack_ptr = 0x20;  //r20
+//  stack_ptr--;
+//  *stack_ptr = 0x21;  //r21
+//  stack_ptr--;
+//  *stack_ptr = 0x22;  //r22
+//  stack_ptr--;
+//  *stack_ptr = 0x23;  //r23
+//  stack_ptr--;
+//  *stack_ptr = 0x24;  //r24
+//  stack_ptr--;
+//  *stack_ptr = 0x25;  //r25
+//  stack_ptr--;
+//  *stack_ptr = 0x26;  //r26
+//  stack_ptr--;
+//  *stack_ptr = 0x27;  //r27
+//  stack_ptr--;
+//  *stack_ptr = 0x28;  //r28
+//  stack_ptr--;
+//  *stack_ptr = 0x29;  //r29
+//  stack_ptr--;
+//  *stack_ptr = 0x30;  //r30
+//  stack_ptr--;
+//  *stack_ptr = 0x31;  //r31
+//  stack_ptr--;
+//
+//  return 1;
+//}
+/*---------------------------------------------------------------------------*/
+uint8_t
+init_process_stack(struct process *p, void *task_ptr, uint8_t *buffer_ptr, uint16_t stack_size)
+{
+  printf("\nStart of init_process_stack\n\n");
+
+  unsigned int this_address;
+
+  /* stack grows down in memory */
+  uint8_t *stack_ptr = buffer_ptr + stack_size - 1;
+
+
+  if (num_stacks > MAX_NUM_STACKS) {
+    /* error, tcb is not big enough, need to increase max_numtasks in uik.h */
+    return -1;
+  }
+
+
+
+  /*  setup parameters
+   *  "initialized" could be changed to ready without much effect, but UIKRun would
+   *  not have to be called
+   */
+  //tcb[numtasks].state = initialized;
+  //tcb[numtasks].delay = 0;
+
+
+
+
+  /* place a few known bytes on the bottom - useful for debugging */
+  /* tcb[numtasks].stack_lptr = stack_ptr; */
+  // TODO
+  //tcb[numtasks].stack_ptr = stack_ptr - 1;
+  p->stack_ptr = stack_ptr - 1;
+
+  /* will be location of most significant part of stack address */
+  *stack_ptr = 0x11;
+  stack_ptr--;
+  /* least significant byte of stack address */
+  *stack_ptr = 0x22;
+  stack_ptr--;
+  *stack_ptr = 0x33;
+  stack_ptr--;
+
+  /* address of the executing function */
+  this_address = task_ptr;
+  *stack_ptr   = this_address & 0x00ff;
+  stack_ptr--;
+  this_address >>= 8;
+  *stack_ptr = this_address & 0x00ff;
+  stack_ptr--;
+
+  /* simulate stack after a call to savecontext */
+  *stack_ptr = 0x00;  //necessary for reti to line up
+  stack_ptr--;
+  *stack_ptr = 0x00;  //r0
+  stack_ptr--;
+  *stack_ptr = 0x00;  //r1 wants to always be 0
+  stack_ptr--;
+  *stack_ptr = 0x02;  //r2
+  stack_ptr--;
+  *stack_ptr = 0x03;  //r3
+  stack_ptr--;
+  *stack_ptr = 0x04;  //r4
+  stack_ptr--;
+  *stack_ptr = 0x05;  //r5
+  stack_ptr--;
+  *stack_ptr = 0x06;  //r6
+  stack_ptr--;
+  *stack_ptr = 0x07;  //r7
+  stack_ptr--;
+  *stack_ptr = 0x08;  //r8
+  stack_ptr--;
+  *stack_ptr = 0x09;  //r9
+  stack_ptr--;
+  *stack_ptr = 0x10;  //r10
+  stack_ptr--;
+  *stack_ptr = 0x11;  //r11
+  stack_ptr--;
+  *stack_ptr = 0x12;  //r12
+  stack_ptr--;
+  *stack_ptr = 0x13;  //r13
+  stack_ptr--;
+  *stack_ptr = 0x14;  //r14
+  stack_ptr--;
+  *stack_ptr = 0x15;  //r15
+  stack_ptr--;
+  *stack_ptr = 0x16;  //r16
+  stack_ptr--;
+  *stack_ptr = 0x17;  //r17
+  stack_ptr--;
+  *stack_ptr = 0x18;  //r18
+  stack_ptr--;
+  *stack_ptr = 0x19;  //r19
+  stack_ptr--;
+  *stack_ptr = 0x20;  //r20
+  stack_ptr--;
+  *stack_ptr = 0x21;  //r21
+  stack_ptr--;
+  *stack_ptr = 0x22;  //r22
+  stack_ptr--;
+  *stack_ptr = 0x23;  //r23
+  stack_ptr--;
+  *stack_ptr = 0x24;  //r24
+  stack_ptr--;
+  *stack_ptr = 0x25;  //r25
+  stack_ptr--;
+  *stack_ptr = 0x26;  //r26
+  stack_ptr--;
+  *stack_ptr = 0x27;  //r27
+  stack_ptr--;
+  *stack_ptr = 0x28;  //r28
+  stack_ptr--;
+  *stack_ptr = 0x29;  //r29
+  stack_ptr--;
+  *stack_ptr = 0x30;  //r30
+  stack_ptr--;
+  *stack_ptr = 0x31;  //r31
+  stack_ptr--;
+
+  /* store the address of the stack */
+  this_address = stack_ptr;
+  *(p->stack_ptr) = (this_address & 0xff);
+  this_address >>= 8;
+  *(p->stack_ptr + 1) = (this_address & 0xff);
+
+  num_stacks++;
+
+  printf("\nEnd of init_process_stack\n\n");
+
+  /* return the task id */
+  //return (num_stacks - 1);
+  return num_stacks;
+}
+/*---------------------------------------------------------------------------*/
+//uint8_t
+//init_sub_stack(struct process *p, void *task_ptr, uint8_t *buffer_ptr, uint16_t stack_size)
+//{
+//  printf("\nStart of init_sub_stack\n\n");
+//
+//  unsigned int this_address;
+//
+//  /* stack grows down in memory */
+//  uint8_t *stack_ptr = buffer_ptr + stack_size - 1;
+//
+//
+//  if (num_stacks > MAX_NUM_STACKS) {
+//    /* error, tcb is not big enough, need to increase max_numtasks in uik.h */
+//    return -1;
+//  }
+//
+//
+//
+//  /*  setup parameters
+//   *  "initialized" could be changed to ready without much effect, but UIKRun would
+//   *  not have to be called
+//   */
+//  //tcb[numtasks].state = initialized;
+//  //tcb[numtasks].delay = 0;
+//
+//
+//
+//
+//  /* place a few known bytes on the bottom - useful for debugging */
+//  /* tcb[numtasks].stack_lptr = stack_ptr; */
+//  // TODO
+//  //tcb[numtasks].stack_ptr = stack_ptr - 1;
+//  p->stack_ptr = stack_ptr - 1;
+//
+//  /* will be location of most significant part of stack address */
+//  *stack_ptr = 0x11;
+//  stack_ptr--;
+//  /* least significant byte of stack address */
+//  *stack_ptr = 0x22;
+//  stack_ptr--;
+//  *stack_ptr = 0x33;
+//  stack_ptr--;
+//
+//  /* address of the executing function */
+//  this_address = task_ptr;
+//  *stack_ptr   = this_address & 0x00ff;
+//  stack_ptr--;
+//  this_address >>= 8;
+//  *stack_ptr = this_address & 0x00ff;
+//  stack_ptr--;
+//
+//  /* simulate stack after a call to savecontext */
+//  *stack_ptr = 0x00;  //necessary for reti to line up
+//  stack_ptr--;
+//  *stack_ptr = 0x00;  //r0
+//  stack_ptr--;
+//  *stack_ptr = 0x00;  //r1 wants to always be 0
+//  stack_ptr--;
+//  *stack_ptr = 0x02;  //r2
+//  stack_ptr--;
+//  *stack_ptr = 0x03;  //r3
+//  stack_ptr--;
+//  *stack_ptr = 0x04;  //r4
+//  stack_ptr--;
+//  *stack_ptr = 0x05;  //r5
+//  stack_ptr--;
+//  *stack_ptr = 0x06;  //r6
+//  stack_ptr--;
+//  *stack_ptr = 0x07;  //r7
+//  stack_ptr--;
+//  *stack_ptr = 0x08;  //r8
+//  stack_ptr--;
+//  *stack_ptr = 0x09;  //r9
+//  stack_ptr--;
+//  *stack_ptr = 0x10;  //r10
+//  stack_ptr--;
+//  *stack_ptr = 0x11;  //r11
+//  stack_ptr--;
+//  *stack_ptr = 0x12;  //r12
+//  stack_ptr--;
+//  *stack_ptr = 0x13;  //r13
+//  stack_ptr--;
+//  *stack_ptr = 0x14;  //r14
+//  stack_ptr--;
+//  *stack_ptr = 0x15;  //r15
+//  stack_ptr--;
+//  *stack_ptr = 0x16;  //r16
+//  stack_ptr--;
+//  *stack_ptr = 0x17;  //r17
+//  stack_ptr--;
+//  *stack_ptr = 0x18;  //r18
+//  stack_ptr--;
+//  *stack_ptr = 0x19;  //r19
+//  stack_ptr--;
+//  *stack_ptr = 0x20;  //r20
+//  stack_ptr--;
+//  *stack_ptr = 0x21;  //r21
+//  stack_ptr--;
+//  *stack_ptr = 0x22;  //r22
+//  stack_ptr--;
+//  *stack_ptr = 0x23;  //r23
+//  stack_ptr--;
+//  *stack_ptr = 0x24;  //r24
+//  stack_ptr--;
+//  *stack_ptr = 0x25;  //r25
+//  stack_ptr--;
+//  *stack_ptr = 0x26;  //r26
+//  stack_ptr--;
+//  *stack_ptr = 0x27;  //r27
+//  stack_ptr--;
+//  *stack_ptr = 0x28;  //r28
+//  stack_ptr--;
+//  *stack_ptr = 0x29;  //r29
+//  stack_ptr--;
+//  *stack_ptr = 0x30;  //r30
+//  stack_ptr--;
+//  *stack_ptr = 0x31;  //r31
+//  stack_ptr--;
+//
+//  /* store the address of the stack */
+//  this_address = stack_ptr;
+//  *(p->stack_ptr) = (this_address & 0xff);
+//  this_address >>= 8;
+//  *(p->stack_ptr + 1) = (this_address & 0xff);
+//
+//  num_stacks++;
+//
+//  printf("\nEnd of init_sub_stack\n\n");
+//
+//  /* return the task id */
+//  //return (num_stacks - 1);
+//  return num_stacks;
+//}
+/*---------------------------------------------------------------------------*/
 int
 process_suspend(struct process *p)
 {
@@ -209,18 +551,22 @@ process_suspend(struct process *p)
   }
 
   if(process_current->state == PROCESS_STATE_RUNNING) {
-    printf("\nRUNNING PROCESS IS NONE\n\n");
+    printf("\nCALLED PROCESS IS NONE\n\n");
 
-    /*
-     *
-     */
-    process_current = p;
+    //for(q = process_list; q != NULL; q = q->next) {
+    //  if(q->id = process_current->id) {
+    //    process_preempted = q;
+    //  }
+    //} /* for end */
+
+    //process_current = p;
+
     p->state = PROCESS_STATE_CALLED;
-    process_stack_ptr = p->stack_ptr;
+
 
     suspend_flag = 1;
 
-    return PROCESS_ERR_OK;
+    return PROCESS_ERR_RUNNING;
   }
 
 
@@ -242,9 +588,11 @@ process_suspend(struct process *p)
     if(q->state == PROCESS_STATE_CALLED) {
       process_preempted = q;
       q->state = PROCESS_STATE_SUSPENDED;
+      init_process_stack(q, q->pt.lc, main_thread_stack, STACK_SIZE);
+      process_stack_ptr = q->stack_ptr;
+
       process_current = p;
       p->state = PROCESS_STATE_CALLED;
-      process_stack_ptr = p->stack_ptr;
     } /* if end */
   } /* for end */
 
@@ -270,11 +618,12 @@ process_resume(struct process *p)
     for(q = process_list; q != NULL; q = q->next) {
       if(q->state == PROCESS_STATE_CALLED) {
         q->state = PROCESS_STATE_RUNNING;
+        process_stack_ptr = q->stack_ptr;
       } /* if end */
     } /* for end  */
 
     suspend_flag = 0;
-    return PROCESS_ERR_OK;
+    return PROCESS_ERR_RESUME;
   }
 
   // TODO call init change stack function
@@ -297,9 +646,10 @@ process_resume(struct process *p)
     if(q->state == PROCESS_STATE_SUSPENDED) {
       //p = q;
       //suspend_count = suspend_count + 1;
-      process_current = q;
+      //process_current = q;
       q->state = PROCESS_STATE_CALLED;
       process_stack_ptr = q->stack_ptr;
+
       process_preempted = NULL;
       p->state = PROCESS_STATE_RUNNING;
     } /* if end */
@@ -325,348 +675,6 @@ process_resume(struct process *p)
   return PROCESS_ERR_OK;
 }
 /*---------------------------------------------------------------------------*/
-uint8_t 
-move_stack_ptr(uint8_t *stack_ptr)
-{
-  /* simulate stack after a call to savecontext */
-  *stack_ptr = 0x00;  //necessary for reti to line up
-  stack_ptr--;
-  *stack_ptr = 0x00;  //r0
-  stack_ptr--;
-  *stack_ptr = 0x00;  //r1 wants to always be 0
-  stack_ptr--;
-  *stack_ptr = 0x02;  //r2
-  stack_ptr--;
-  *stack_ptr = 0x03;  //r3
-  stack_ptr--;
-  *stack_ptr = 0x04;  //r4
-  stack_ptr--;
-  *stack_ptr = 0x05;  //r5
-  stack_ptr--;
-  *stack_ptr = 0x06;  //r6
-  stack_ptr--;
-  *stack_ptr = 0x07;  //r7
-  stack_ptr--;
-  *stack_ptr = 0x08;  //r8
-  stack_ptr--;
-  *stack_ptr = 0x09;  //r9
-  stack_ptr--;
-  *stack_ptr = 0x10;  //r10
-  stack_ptr--;
-  *stack_ptr = 0x11;  //r11
-  stack_ptr--;
-  *stack_ptr = 0x12;  //r12
-  stack_ptr--;
-  *stack_ptr = 0x13;  //r13
-  stack_ptr--;
-  *stack_ptr = 0x14;  //r14
-  stack_ptr--;
-  *stack_ptr = 0x15;  //r15
-  stack_ptr--;
-  *stack_ptr = 0x16;  //r16
-  stack_ptr--;
-  *stack_ptr = 0x17;  //r17
-  stack_ptr--;
-  *stack_ptr = 0x18;  //r18
-  stack_ptr--;
-  *stack_ptr = 0x19;  //r19
-  stack_ptr--;
-  *stack_ptr = 0x20;  //r20
-  stack_ptr--;
-  *stack_ptr = 0x21;  //r21
-  stack_ptr--;
-  *stack_ptr = 0x22;  //r22
-  stack_ptr--;
-  *stack_ptr = 0x23;  //r23
-  stack_ptr--;
-  *stack_ptr = 0x24;  //r24
-  stack_ptr--;
-  *stack_ptr = 0x25;  //r25
-  stack_ptr--;
-  *stack_ptr = 0x26;  //r26
-  stack_ptr--;
-  *stack_ptr = 0x27;  //r27
-  stack_ptr--;
-  *stack_ptr = 0x28;  //r28
-  stack_ptr--;
-  *stack_ptr = 0x29;  //r29
-  stack_ptr--;
-  *stack_ptr = 0x30;  //r30
-  stack_ptr--;
-  *stack_ptr = 0x31;  //r31
-  stack_ptr--;
-
-  return 1;
-}
-/*---------------------------------------------------------------------------*/
-uint8_t
-init_main_stack(struct process *p, void *task_ptr, uint8_t *buffer_ptr, uint16_t stack_size)
-{
-  printf("\nStart of init_main_stack\n\n");
-
-  unsigned int this_address;
-
-  /* stack grows down in memory */
-  uint8_t *stack_ptr = buffer_ptr + stack_size - 1;
-
-
-  if (num_stacks > MAX_NUM_STACKS) {
-    /* error, tcb is not big enough, need to increase max_numtasks in uik.h */
-    return -1;
-  }
-
-
-
-  /*  setup parameters
-   *  "initialized" could be changed to ready without much effect, but UIKRun would
-   *  not have to be called
-   */
-  //tcb[numtasks].state = initialized;
-  //tcb[numtasks].delay = 0;
-
-
-
-
-  /* place a few known bytes on the bottom - useful for debugging */
-  /* tcb[numtasks].stack_lptr = stack_ptr; */
-  // TODO
-  //tcb[numtasks].stack_ptr = stack_ptr - 1;
-  p->stack_ptr = stack_ptr - 1;
-
-  /* will be location of most significant part of stack address */
-  *stack_ptr = 0x11;
-  stack_ptr--;
-  /* least significant byte of stack address */
-  *stack_ptr = 0x22;
-  stack_ptr--;
-  *stack_ptr = 0x33;
-  stack_ptr--;
-
-  /* address of the executing function */
-  this_address = task_ptr;
-  *stack_ptr   = this_address & 0x00ff;
-  stack_ptr--;
-  this_address >>= 8;
-  *stack_ptr = this_address & 0x00ff;
-  stack_ptr--;
-
-  /* simulate stack after a call to savecontext */
-  *stack_ptr = 0x00;  //necessary for reti to line up
-  stack_ptr--;
-  *stack_ptr = 0x00;  //r0
-  stack_ptr--;
-  *stack_ptr = 0x00;  //r1 wants to always be 0
-  stack_ptr--;
-  *stack_ptr = 0x02;  //r2
-  stack_ptr--;
-  *stack_ptr = 0x03;  //r3
-  stack_ptr--;
-  *stack_ptr = 0x04;  //r4
-  stack_ptr--;
-  *stack_ptr = 0x05;  //r5
-  stack_ptr--;
-  *stack_ptr = 0x06;  //r6
-  stack_ptr--;
-  *stack_ptr = 0x07;  //r7
-  stack_ptr--;
-  *stack_ptr = 0x08;  //r8
-  stack_ptr--;
-  *stack_ptr = 0x09;  //r9
-  stack_ptr--;
-  *stack_ptr = 0x10;  //r10
-  stack_ptr--;
-  *stack_ptr = 0x11;  //r11
-  stack_ptr--;
-  *stack_ptr = 0x12;  //r12
-  stack_ptr--;
-  *stack_ptr = 0x13;  //r13
-  stack_ptr--;
-  *stack_ptr = 0x14;  //r14
-  stack_ptr--;
-  *stack_ptr = 0x15;  //r15
-  stack_ptr--;
-  *stack_ptr = 0x16;  //r16
-  stack_ptr--;
-  *stack_ptr = 0x17;  //r17
-  stack_ptr--;
-  *stack_ptr = 0x18;  //r18
-  stack_ptr--;
-  *stack_ptr = 0x19;  //r19
-  stack_ptr--;
-  *stack_ptr = 0x20;  //r20
-  stack_ptr--;
-  *stack_ptr = 0x21;  //r21
-  stack_ptr--;
-  *stack_ptr = 0x22;  //r22
-  stack_ptr--;
-  *stack_ptr = 0x23;  //r23
-  stack_ptr--;
-  *stack_ptr = 0x24;  //r24
-  stack_ptr--;
-  *stack_ptr = 0x25;  //r25
-  stack_ptr--;
-  *stack_ptr = 0x26;  //r26
-  stack_ptr--;
-  *stack_ptr = 0x27;  //r27
-  stack_ptr--;
-  *stack_ptr = 0x28;  //r28
-  stack_ptr--;
-  *stack_ptr = 0x29;  //r29
-  stack_ptr--;
-  *stack_ptr = 0x30;  //r30
-  stack_ptr--;
-  *stack_ptr = 0x31;  //r31
-  stack_ptr--;
-
-  /* store the address of the stack */
-  this_address = stack_ptr;
-  *(p->stack_ptr) = (this_address & 0xff);
-  this_address >>= 8;
-  *(p->stack_ptr + 1) = (this_address & 0xff);
-
-  num_stacks++;
-
-  printf("\nEnd of init_main_stack\n\n");
-
-  /* return the task id */
-  //return (num_stacks - 1);
-  return num_stacks;
-}
-/*---------------------------------------------------------------------------*/
-uint8_t
-init_sub_stack(struct process *p, void *task_ptr, uint8_t *buffer_ptr, uint16_t stack_size)
-{
-  printf("\nStart of init_sub_stack\n\n");
-
-  unsigned int this_address;
-
-  /* stack grows down in memory */
-  uint8_t *stack_ptr = buffer_ptr + stack_size - 1;
-
-
-  if (num_stacks > MAX_NUM_STACKS) {
-    /* error, tcb is not big enough, need to increase max_numtasks in uik.h */
-    return -1;
-  }
-
-
-
-  /*  setup parameters
-   *  "initialized" could be changed to ready without much effect, but UIKRun would
-   *  not have to be called
-   */
-  //tcb[numtasks].state = initialized;
-  //tcb[numtasks].delay = 0;
-
-
-
-
-  /* place a few known bytes on the bottom - useful for debugging */
-  /* tcb[numtasks].stack_lptr = stack_ptr; */
-  // TODO
-  //tcb[numtasks].stack_ptr = stack_ptr - 1;
-  p->stack_ptr = stack_ptr - 1;
-
-  /* will be location of most significant part of stack address */
-  *stack_ptr = 0x11;
-  stack_ptr--;
-  /* least significant byte of stack address */
-  *stack_ptr = 0x22;
-  stack_ptr--;
-  *stack_ptr = 0x33;
-  stack_ptr--;
-
-  /* address of the executing function */
-  this_address = task_ptr;
-  *stack_ptr   = this_address & 0x00ff;
-  stack_ptr--;
-  this_address >>= 8;
-  *stack_ptr = this_address & 0x00ff;
-  stack_ptr--;
-
-  /* simulate stack after a call to savecontext */
-  *stack_ptr = 0x00;  //necessary for reti to line up
-  stack_ptr--;
-  *stack_ptr = 0x00;  //r0
-  stack_ptr--;
-  *stack_ptr = 0x00;  //r1 wants to always be 0
-  stack_ptr--;
-  *stack_ptr = 0x02;  //r2
-  stack_ptr--;
-  *stack_ptr = 0x03;  //r3
-  stack_ptr--;
-  *stack_ptr = 0x04;  //r4
-  stack_ptr--;
-  *stack_ptr = 0x05;  //r5
-  stack_ptr--;
-  *stack_ptr = 0x06;  //r6
-  stack_ptr--;
-  *stack_ptr = 0x07;  //r7
-  stack_ptr--;
-  *stack_ptr = 0x08;  //r8
-  stack_ptr--;
-  *stack_ptr = 0x09;  //r9
-  stack_ptr--;
-  *stack_ptr = 0x10;  //r10
-  stack_ptr--;
-  *stack_ptr = 0x11;  //r11
-  stack_ptr--;
-  *stack_ptr = 0x12;  //r12
-  stack_ptr--;
-  *stack_ptr = 0x13;  //r13
-  stack_ptr--;
-  *stack_ptr = 0x14;  //r14
-  stack_ptr--;
-  *stack_ptr = 0x15;  //r15
-  stack_ptr--;
-  *stack_ptr = 0x16;  //r16
-  stack_ptr--;
-  *stack_ptr = 0x17;  //r17
-  stack_ptr--;
-  *stack_ptr = 0x18;  //r18
-  stack_ptr--;
-  *stack_ptr = 0x19;  //r19
-  stack_ptr--;
-  *stack_ptr = 0x20;  //r20
-  stack_ptr--;
-  *stack_ptr = 0x21;  //r21
-  stack_ptr--;
-  *stack_ptr = 0x22;  //r22
-  stack_ptr--;
-  *stack_ptr = 0x23;  //r23
-  stack_ptr--;
-  *stack_ptr = 0x24;  //r24
-  stack_ptr--;
-  *stack_ptr = 0x25;  //r25
-  stack_ptr--;
-  *stack_ptr = 0x26;  //r26
-  stack_ptr--;
-  *stack_ptr = 0x27;  //r27
-  stack_ptr--;
-  *stack_ptr = 0x28;  //r28
-  stack_ptr--;
-  *stack_ptr = 0x29;  //r29
-  stack_ptr--;
-  *stack_ptr = 0x30;  //r30
-  stack_ptr--;
-  *stack_ptr = 0x31;  //r31
-  stack_ptr--;
-
-  /* store the address of the stack */
-  this_address = stack_ptr;
-  *(p->stack_ptr) = (this_address & 0xff);
-  this_address >>= 8;
-  *(p->stack_ptr + 1) = (this_address & 0xff);
-
-  num_stacks++;
-
-  printf("\nEnd of init_sub_stack\n\n");
-
-  /* return the task id */
-  //return (num_stacks - 1);
-  return num_stacks;
-}
-/*---------------------------------------------------------------------------*/
 #if defined(TCNT3) && RTIMER_ARCH_PRESCALER
 ISR (TIMER3_COMPA_vect) {
   printf("\n\n---------------call ISR3---------------\n\n");
@@ -685,29 +693,78 @@ ISR (TIMER3_COMPA_vect) {
 
 
 
+
+  /**
+    *   start edited by ysk
+    */
   /* interruption is here */
   struct process *p;
+
+
+  // TODO delete
+  printf("\n------------------\n");
   for(p = process_list; p != NULL; p = p->next) {
-    //if(p->state == PROCESS_STATE_CALLED) {
-    if(p->id == 2) {
-      init_main_stack(p, p->pt.lc, main_thread_stack, STACK_SIZE);
+    printf("process - id: %d - state: %d - type: %d\n",
+            p->id, p->state, p->type);
+  }
+  printf("------------------\n");
+    printf("process current - id: %d - state: %d - type: %d\n",
+            process_current->id, process_current->state, process_current->type);
+    printf("process preempted - id: %d - state: %d - type: %d\n",
+            process_preempted->id, process_preempted->state, process_preempted->type);
+  printf("------------------\n\n");
+  // TODO delete
+
+
+  for(p = process_list; p != NULL; p = p->next) {
+    if(p->id == process_current->id) {
+      process_preempted = p;
+
+      printf("process - id: %d - state: %d - type: %d\n",
+              p->id, p->state, p->type);
+      init_process_stack(p, p->pt.lc, main_thread_stack, STACK_SIZE);
       process_stack_ptr = p->stack_ptr;
-    } /* if end */
+    } /* if process id end */
+
+    if(p->type == REALTIME_TASK) {
+      if(process_suspend(p) == PROCESS_ERR_OK) {
+        break;
+      } /* if suspend end  */
+    } /* if check type end */
   } /* for end  */
+
+
+  // TODO delete
+  printf("\n------------------\n");
+  for(p = process_list; p != NULL; p = p->next) {
+    printf("process - id: %d - state: %d - type: %d\n",
+            p->id, p->state, p->type);
+  }
+  printf("------------------\n");
+    printf("process current - id: %d - state: %d - type: %d\n",
+            process_current->id, process_current->state, process_current->type);
+    printf("process preempted - id: %d - state: %d - type: %d\n",
+            process_preempted->id, process_preempted->state, process_preempted->type);
+  printf("------------------\n\n");
+  // TODO delete
+
 
   SAVE_CONTEXT();
   printf("saved main\n");
 
+
   for(p = process_list; p != NULL; p = p->next) {
-    //if(p->state == PROCESS_STATE_CALLED) {
     if(p->type == REALTIME_TASK) {
       process_stack_ptr = p->stack_ptr;
     } /* if end */
   } /* for end  */
 
+
   RESTORE_CONTEXT();
   printf("restore sub\n");
-
+  /**
+    *   end edited by ysk
+    */
 
 
   /* Call rtimer callback */
@@ -716,23 +773,75 @@ ISR (TIMER3_COMPA_vect) {
   printf("finish rtimer next\n");
 
 
-
-
+  /**
+    *   start edited by ysk
+    */
   /* interruption is here */
   SAVE_CONTEXT();
   printf("saved sub\n");
 
-  /* interruption is here */
+
+  // TODO delete
+  printf("\n------------------\n");
   for(p = process_list; p != NULL; p = p->next) {
-    //if(p->state == PROCESS_STATE_CALLED) {
-    if(p->id == 2) {
-      //init_main_stack(p, p->pt.lc, main_thread_stack, STACK_SIZE);
+    printf("process - id: %d - state: %d - type: %d\n",
+            p->id, p->state, p->type);
+  }
+  printf("------------------\n");
+    printf("process current - id: %d - state: %d - type: %d\n",
+            process_current->id, process_current->state, process_current->type);
+    printf("process preempted - id: %d - state: %d - type: %d\n",
+            process_preempted->id, process_preempted->state, process_preempted->type);
+  printf("------------------\n\n");
+  // TODO delete
+
+
+  /* interruption is here */
+  /* ---------------- */
+  //for(p = process_list; p != NULL; p = p->next) {
+  //  //if(p->state == PROCESS_STATE_CALLED) {
+  //  if(p->id == process_current->id) {
+  //    printf("if restore main in\n");
+  //    process_stack_ptr = p->stack_ptr;
+  //  }
+  //}
+  /* ---------------- */
+  for(p = process_list; p != NULL; p = p->next) {
+    if(p->type == REALTIME_TASK) {
+      if(process_resume(p) == PROCESS_ERR_OK) {
+        break;
+      }
+    }
+
+    if(p->id == process_preempted->id) {
       process_stack_ptr = p->stack_ptr;
-    } /* if end */
-  } /* for end  */
+      process_preempted = NULL;
+    }
+  } /* for end */
+  /* ---------------- */
+
+
+  
+  // TODO delete
+  printf("\n------------------\n");
+  for(p = process_list; p != NULL; p = p->next) {
+    printf("process - id: %d - state: %d - type: %d\n",
+            p->id, p->state, p->type);
+  }
+  printf("------------------\n");
+    printf("process current - id: %d - state: %d - type: %d\n",
+            process_current->id, process_current->state, process_current->type);
+    printf("process preempted - id: %d - state: %d - type: %d\n",
+            process_preempted->id, process_preempted->state, process_preempted->type);
+  printf("------------------\n\n");
+  // TODO delete
+
 
   RESTORE_CONTEXT();
   printf("restore main\n");
+  /**
+    *   end edited by ysk
+    */
 
 
 
@@ -850,7 +959,7 @@ rtimer_arch_schedule(rtimer_clock_t t)
   //  for(p = process_list; p != NULL; p = p->next) {
   //    //if(p->state == PROCESS_STATE_CALLED) {
   //    if(p->id == 2) {
-  //      //init_main_stack(p, p->pt.lc, main_thread_stack, STACK_SIZE);
+  //      //init_process_stack(p, p->pt.lc, main_thread_stack, STACK_SIZE);
   //      process_stack_ptr = p->stack_ptr;
 
   //      //if(chcontext_count == 0) {
@@ -886,7 +995,7 @@ rtimer_arch_schedule(rtimer_clock_t t)
   //  for(p = process_list; p != NULL; p = p->next) {
   //    //if(p->state == PROCESS_STATE_CALLED) {
   //    if(p->id == 2) {
-  //      init_main_stack(p, p->pt.lc, main_thread_stack, STACK_SIZE);
+  //      init_process_stack(p, p->pt.lc, main_thread_stack, STACK_SIZE);
   //      process_stack_ptr = p->stack_ptr;
   //    } /* if end */
   //  } /* for end  */
@@ -927,7 +1036,7 @@ rtimer_arch_schedule(rtimer_clock_t t)
   //  for(p = process_list; p != NULL; p = p->next) {
   //    //if(p->state == PROCESS_STATE_CALLED) {
   //    if(p->id == process_current->id) {
-  //      init_main_stack(p, p->pt.lc, main_thread_stack, STACK_SIZE);
+  //      init_process_stack(p, p->pt.lc, main_thread_stack, STACK_SIZE);
   //      //printf("process_stack_ptr: %p - value: %d\n", &process_stack_ptr, process_stack_ptr);
   //      process_stack_ptr = p->stack_ptr;
   //      //printf("process_stack_ptr: %p - value: %d\n", &process_stack_ptr, process_stack_ptr);

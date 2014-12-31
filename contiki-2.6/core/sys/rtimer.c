@@ -77,10 +77,14 @@ rtimer_set(struct rtimer *rtimer, rtimer_clock_t time,
 
   struct process *p; 
   for(p = process_list; p != NULL; p = p->next) {
-    if((p->state == PROCESS_STATE_CALLED)  && (set_count == 1)) {
+    if((p->state == PROCESS_STATE_CALLED)  && (set_count == 0)) {
+      init_process_stack(p, func, sub_thread_stack, STACK_SIZE);
+      p->type = REALTIME_TASK;
       process_realtime = p;
     } /* if end */
   } /* for end  */
+
+  printf("set count: %d\n", set_count);
 
   set_count = set_count + 1;
   
@@ -111,11 +115,11 @@ rtimer_set(struct rtimer *rtimer, rtimer_clock_t time,
 void
 rtimer_run_next(void)
 {
-  printf("\n---------------in rtimer-----------------\n");
-  struct process *tmp_p;
-  for(tmp_p = process_list; tmp_p != NULL; tmp_p = tmp_p->next) {
-    printf("process: %s - state: %d\n", PROCESS_NAME_STRING(tmp_p), tmp_p->state);
-  }
+  //printf("\n---------------in rtimer-----------------\n");
+  //struct process *tmp_p;
+  //for(tmp_p = process_list; tmp_p != NULL; tmp_p = tmp_p->next) {
+  //  printf("process: %s - state: %d\n", PROCESS_NAME_STRING(tmp_p), tmp_p->state);
+  //}
   printf("\n---------------in rtimer-----------------\n");
 
   struct rtimer *t;
@@ -124,10 +128,15 @@ rtimer_run_next(void)
   }
   t = next_rtimer;
   next_rtimer = NULL;
+  printf("start here\n");
   t->func(t, t->ptr);
+  printf("end here\n");
   if(next_rtimer != NULL) {
     rtimer_arch_schedule(next_rtimer->time);
   }
+
+  printf("\n---------------end rtimer-----------------\n");
+
   return;
 }
 /*---------------------------------------------------------------------------*/

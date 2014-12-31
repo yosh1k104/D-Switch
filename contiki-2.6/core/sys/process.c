@@ -70,6 +70,7 @@ struct event_data {
 
 static process_num_events_t nevents, fevent;
 static struct event_data events[PROCESS_CONF_NUMEVENTS];
+static uint8_t id_count = 1;
 
 #if PROCESS_CONF_STATS
 process_num_events_t process_maxevents;
@@ -87,7 +88,9 @@ static volatile unsigned char poll_requested;
 
 
 static void call_process(struct process *p, process_event_t ev, process_data_t data);
-//int set_process_type(struct process *p, unsigned char type);
+
+//int num_stacks = 0;
+
 
 #define DEBUG 0
 #if DEBUG
@@ -121,7 +124,10 @@ process_start(struct process *p, const char *arg)
   p->next = process_list;
   process_list = p;
   p->state = PROCESS_STATE_RUNNING;
-  //p->process_type = NORMAL_TASK;
+  p->stack_ptr = NULL;
+  p->type = NORMAL_TASK;
+  p->id = id_count;
+  id_count = id_count + 1;
   //set_process_type(p, NORMAL_TASK);
   PT_INIT(&p->pt);
 
@@ -197,13 +203,13 @@ call_process(struct process *p, process_event_t ev, process_data_t data)
   if((p->state & PROCESS_STATE_RUNNING) &&
      p->thread != NULL) {
     if(ev == 129){
-        printf("process: calling process '%s' with event PROCESS_EVENT_INIT\n", PROCESS_NAME_STRING(p));
+        //printf("process: calling process '%s' with event PROCESS_EVENT_INIT\n", PROCESS_NAME_STRING(p));
     }
     else if (ev == 130){
-        printf("process: calling process '%s' with event PROCESS_EVENT_POLL\n", PROCESS_NAME_STRING(p));
+        //printf("process: calling process '%s' with event PROCESS_EVENT_POLL\n", PROCESS_NAME_STRING(p));
     }
     else if (ev == 136){
-        printf("process: calling process '%s' with event PROCESS_EVENT_TIMER\n", PROCESS_NAME_STRING(p));
+        //printf("process: calling process '%s' with event PROCESS_EVENT_TIMER\n", PROCESS_NAME_STRING(p));
     }
     process_current = p;
     p->state = PROCESS_STATE_CALLED;
@@ -347,9 +353,9 @@ process_post(struct process *p, process_event_t ev, process_data_t data)
     printf("process_post: NULL process posts event %d to process '%s', nevents %d\n",
 	   ev,PROCESS_NAME_STRING(p), nevents);
   } else {
-    printf("process_post: Process '%s' posts event %d to process '%s', nevents %d\n",
-	   PROCESS_NAME_STRING(PROCESS_CURRENT()), ev,
-	   p == PROCESS_BROADCAST? "<broadcast>": PROCESS_NAME_STRING(p), nevents);
+    //printf("process_post: Process '%s' posts event %d to process '%s', nevents %d\n",
+	//   PROCESS_NAME_STRING(PROCESS_CURRENT()), ev,
+	//   p == PROCESS_BROADCAST? "<broadcast>": PROCESS_NAME_STRING(p), nevents);
   }
   
   if(nevents == PROCESS_CONF_NUMEVENTS) {
@@ -459,108 +465,242 @@ process_is_running(struct process *p)
 //  return p->process_type;
 //}
 /*---------------------------------------------------------------------------*/
-int
-process_suspend(struct process *p)
-{
-  if(process_preempted != NULL) {
-      printf("\nERROR SUSPENDED PROCESS HAS ALREADY EXISTED\n\n");
-      return PROCESS_ERR_SUSPEND;
-  }
-
-  if(process_current->state == PROCESS_STATE_RUNNING) {
-      printf("\nRUNNING PROCESS IS NONE\n\n");
-      return PROCESS_ERR_OK;
-  }
-
-
-
-  printf("\nsuspended\n");
-  printf("process_current: %s - state: %d\n", PROCESS_NAME_STRING(PROCESS_CURRENT()), process_current->state);
-  printf("process_preempted: %s - state: %d\n", PROCESS_NAME_STRING(process_preempted), process_preempted->state);
-  //printf("process_realtime: %s - state: %d\n", PROCESS_NAME_STRING(process_realtime), process_realtime->state);
-  printf("suspended\n\n");
-
-
-
-  struct process *q;
-  for(q = process_list; q != NULL; q = q->next) {
-    if(q->state == PROCESS_STATE_SUSPENDED) {
-      printf("\nERROR SUSPENDED PROCESS HAS ALREADY EXISTED\n\n");
-      return PROCESS_ERR_SUSPEND;
-    }
-
-    if(q->state == PROCESS_STATE_CALLED) {
-      process_preempted = q;
-      q->state = PROCESS_STATE_SUSPENDED;
-      process_current = p;
-      p->state = PROCESS_STATE_CALLED;
-    } /* if end */
-  } /* for end */
-
-
-
-  printf("\nsuspended\n");
-  printf("process_current: %s - state: %d\n", PROCESS_NAME_STRING(PROCESS_CURRENT()), process_current->state);
-  printf("process_preempted: %s - state: %d\n", PROCESS_NAME_STRING(process_preempted), process_preempted->state);
-  //printf("process_realtime: %s - state: %d\n", PROCESS_NAME_STRING(process_realtime), process_realtime->state);
-  printf("suspended\n\n");
-
-
-
-  return PROCESS_ERR_OK;
-}
+//int
+//process_suspend(struct process *p)
+//{
+//  if(process_preempted != NULL) {
+//      printf("\nERROR SUSPENDED PROCESS HAS ALREADY EXISTED\n\n");
+//      return PROCESS_ERR_SUSPEND;
+//  }
+//
+//  if(process_current->state == PROCESS_STATE_RUNNING) {
+//      printf("\nRUNNING PROCESS IS NONE\n\n");
+//      return PROCESS_ERR_OK;
+//  }
+//
+//
+//
+//  printf("\nsuspended\n");
+//  printf("process_current: %s - state: %d\n", PROCESS_NAME_STRING(PROCESS_CURRENT()), process_current->state);
+//  printf("process_preempted: %s - state: %d\n", PROCESS_NAME_STRING(process_preempted), process_preempted->state);
+//  //printf("process_realtime: %s - state: %d\n", PROCESS_NAME_STRING(process_realtime), process_realtime->state);
+//  printf("suspended\n\n");
+//
+//
+//
+//  struct process *q;
+//  for(q = process_list; q != NULL; q = q->next) {
+//    if(q->state == PROCESS_STATE_SUSPENDED) {
+//      printf("\nERROR SUSPENDED PROCESS HAS ALREADY EXISTED\n\n");
+//      return PROCESS_ERR_SUSPEND;
+//    }
+//
+//    if(q->state == PROCESS_STATE_CALLED) {
+//      process_preempted = q;
+//      q->state = PROCESS_STATE_SUSPENDED;
+//      process_current = p;
+//      p->state = PROCESS_STATE_CALLED;
+//    } /* if end */
+//  } /* for end */
+//
+//
+//
+//  printf("\nsuspended\n");
+//  printf("process_current: %s - state: %d\n", PROCESS_NAME_STRING(PROCESS_CURRENT()), process_current->state);
+//  printf("process_preempted: %s - state: %d\n", PROCESS_NAME_STRING(process_preempted), process_preempted->state);
+//  //printf("process_realtime: %s - state: %d\n", PROCESS_NAME_STRING(process_realtime), process_realtime->state);
+//  printf("suspended\n\n");
+//
+//
+//
+//  return PROCESS_ERR_OK;
+//}
+///*---------------------------------------------------------------------------*/
+//int
+//process_resume(struct process *p)
+//{
+//  // TODO call init change stack function
+//  if(process_preempted == NULL) {
+//      printf("\nERROR PREEMPTED PROCESS IS NONE\n\n");
+//      return PROCESS_ERR_RESUME;
+//  }
+//
+//
+//
+//  printf("\nresume\n");
+//  printf("process_current: %s - state: %d\n", PROCESS_NAME_STRING(PROCESS_CURRENT()), process_current->state);
+//  printf("process_preempted: %s - state: %d\n", PROCESS_NAME_STRING(process_preempted), process_preempted->state);
+//  //printf("process_realtime: %s - state: %d\n", PROCESS_NAME_STRING(process_realtime), process_realtime->state);
+//  printf("resume\n\n");
+//
+//
+//
+//  //int suspend_count = 0;
+//
+//  struct process *q;
+//  for(q = process_list; q != NULL; q = q->next) {
+//    if(q->state == PROCESS_STATE_SUSPENDED) {
+//      //p = q;
+//      //suspend_count = suspend_count + 1;
+//      process_current = q;
+//      q->state = PROCESS_STATE_CALLED;
+//      process_preempted = NULL;
+//      p->state = PROCESS_STATE_RUNNING;
+//    } /* if end */
+//  } /* for end  */
+//
+//
+//
+//  printf("\nresume\n");
+//  printf("process_current: %s - state: %d\n", PROCESS_NAME_STRING(PROCESS_CURRENT()), process_current->state);
+//  printf("process_preempted: %s - state: %d\n", PROCESS_NAME_STRING(process_preempted), process_preempted->state);
+//  //printf("process_realtime: %s - state: %d\n", PROCESS_NAME_STRING(process_realtime), process_realtime->state);
+//  printf("resume\n\n");
+//
+//
+//
+//  //if(suspend_count != 1) {
+//  //    printf("\nERROR SUSPENDED PROCESS IS NONE OR TOO MANY\n\n");
+//  //    return PROCESS_ERR_RESUME;
+//  //}
+//
+//  //printf("process_current1: %s - state: %d\n", PROCESS_NAME_STRING(PROCESS_CURRENT()), process_current->state);
+//
+//  return PROCESS_ERR_OK;
+//}
 /*---------------------------------------------------------------------------*/
-int
-process_resume(struct process *p)
-{
-  // TODO call init change stack function
-  if(process_preempted == NULL) {
-      printf("\nERROR PREEMPTED PROCESS IS NONE\n\n");
-      return PROCESS_ERR_RESUME;
-  }
-
-
-
-  printf("\nresume\n");
-  printf("process_current: %s - state: %d\n", PROCESS_NAME_STRING(PROCESS_CURRENT()), process_current->state);
-  printf("process_preempted: %s - state: %d\n", PROCESS_NAME_STRING(process_preempted), process_preempted->state);
-  //printf("process_realtime: %s - state: %d\n", PROCESS_NAME_STRING(process_realtime), process_realtime->state);
-  printf("resume\n\n");
-
-
-
-  //int suspend_count = 0;
-
-  struct process *q;
-  for(q = process_list; q != NULL; q = q->next) {
-    if(q->state == PROCESS_STATE_SUSPENDED) {
-      //p = q;
-      //suspend_count = suspend_count + 1;
-      process_current = q;
-      q->state = PROCESS_STATE_CALLED;
-      process_preempted = NULL;
-      p->state = PROCESS_STATE_RUNNING;
-    } /* if end */
-  } /* for end  */
-
-
-
-  printf("\nresume\n");
-  printf("process_current: %s - state: %d\n", PROCESS_NAME_STRING(PROCESS_CURRENT()), process_current->state);
-  printf("process_preempted: %s - state: %d\n", PROCESS_NAME_STRING(process_preempted), process_preempted->state);
-  //printf("process_realtime: %s - state: %d\n", PROCESS_NAME_STRING(process_realtime), process_realtime->state);
-  printf("resume\n\n");
-
-
-
-  //if(suspend_count != 1) {
-  //    printf("\nERROR SUSPENDED PROCESS IS NONE OR TOO MANY\n\n");
-  //    return PROCESS_ERR_RESUME;
-  //}
-
-  //printf("process_current1: %s - state: %d\n", PROCESS_NAME_STRING(PROCESS_CURRENT()), process_current->state);
-
-  return PROCESS_ERR_OK;
-}
+//uint8_t 
+//init_process_stack(struct process *p, char *task_ptr, uint8_t *buffer_ptr, uint16_t stack_size)
+//{
+//  printf("\nStart of init_process_stack\n\n");
+//
+//  unsigned int this_address;
+//
+//  /* stack grows down in memory */ 
+//  uint8_t *stack_ptr = buffer_ptr + stack_size - 1;
+//
+//
+//  if (num_stacks > MAX_NUM_STACKS) {
+//    /* error, tcb is not big enough, need to increase max_numtasks in uik.h */
+//    return -1;
+//  }
+//
+//
+//
+//  /*  setup parameters
+//   *  "initialized" could be changed to ready without much effect, but UIKRun would
+//   *  not have to be called
+//   */
+//  //tcb[numtasks].state = initialized;
+//  //tcb[numtasks].delay = 0;
+//
+//
+//
+//
+//  /* place a few known bytes on the bottom - useful for debugging */
+//  /* tcb[numtasks].stack_lptr = stack_ptr; */
+//  // TODO
+//  //tcb[numtasks].stack_ptr = stack_ptr - 1;
+//  p->stack_ptr = stack_ptr - 1;
+//
+//  /* will be location of most significant part of stack address */
+//  *stack_ptr = 0x11;
+//  stack_ptr--;
+//  /* least significant byte of stack address */
+//  *stack_ptr = 0x22;
+//  stack_ptr--;
+//  *stack_ptr = 0x33;
+//  stack_ptr--;
+//
+//  /* address of the executing function */
+//  this_address = task_ptr;
+//  *stack_ptr   = this_address & 0x00ff;
+//  stack_ptr--;
+//  this_address >>= 8;
+//  *stack_ptr = this_address & 0x00ff;
+//  stack_ptr--;
+//
+//  /* simulate stack after a call to savecontext */ 
+//  *stack_ptr = 0x00;  //necessary for reti to line up
+//  stack_ptr--;
+//  *stack_ptr = 0x00;  //r0
+//  stack_ptr--;
+//  *stack_ptr = 0x00;  //r1 wants to always be 0
+//  stack_ptr--;
+//  *stack_ptr = 0x02;  //r2
+//  stack_ptr--;
+//  *stack_ptr = 0x03;  //r3
+//  stack_ptr--;
+//  *stack_ptr = 0x04;  //r4
+//  stack_ptr--;
+//  *stack_ptr = 0x05;  //r5
+//  stack_ptr--;
+//  *stack_ptr = 0x06;  //r6
+//  stack_ptr--;
+//  *stack_ptr = 0x07;  //r7
+//  stack_ptr--;
+//  *stack_ptr = 0x08;  //r8
+//  stack_ptr--;
+//  *stack_ptr = 0x09;  //r9
+//  stack_ptr--;
+//  *stack_ptr = 0x10;  //r10
+//  stack_ptr--;
+//  *stack_ptr = 0x11;  //r11
+//  stack_ptr--;
+//  *stack_ptr = 0x12;  //r12
+//  stack_ptr--;
+//  *stack_ptr = 0x13;  //r13
+//  stack_ptr--;
+//  *stack_ptr = 0x14;  //r14
+//  stack_ptr--;
+//  *stack_ptr = 0x15;  //r15
+//  stack_ptr--;
+//  *stack_ptr = 0x16;  //r16
+//  stack_ptr--;
+//  *stack_ptr = 0x17;  //r17
+//  stack_ptr--;
+//  *stack_ptr = 0x18;  //r18
+//  stack_ptr--;
+//  *stack_ptr = 0x19;  //r19
+//  stack_ptr--;
+//  *stack_ptr = 0x20;  //r20
+//  stack_ptr--;
+//  *stack_ptr = 0x21;  //r21
+//  stack_ptr--;
+//  *stack_ptr = 0x22;  //r22
+//  stack_ptr--;
+//  *stack_ptr = 0x23;  //r23
+//  stack_ptr--;
+//  *stack_ptr = 0x24;  //r24
+//  stack_ptr--;
+//  *stack_ptr = 0x25;  //r25
+//  stack_ptr--;
+//  *stack_ptr = 0x26;  //r26
+//  stack_ptr--;
+//  *stack_ptr = 0x27;  //r27
+//  stack_ptr--;
+//  *stack_ptr = 0x28;  //r28
+//  stack_ptr--;
+//  *stack_ptr = 0x29;  //r29
+//  stack_ptr--;
+//  *stack_ptr = 0x30;  //r30
+//  stack_ptr--;
+//  *stack_ptr = 0x31;  //r31
+//  stack_ptr--;
+//
+//  /* store the address of the stack */
+//  this_address = stack_ptr;
+//  *(p->stack_ptr) = (this_address & 0xff);
+//  this_address >>= 8;
+//  *(p->stack_ptr + 1) = (this_address & 0xff);
+//
+//  num_stacks++;
+//
+//  printf("\nEnd of init_process_stack\n\n");
+//
+//  /* return the task id */
+//  //return (num_stacks - 1);
+//  return num_stacks;
+//}
 /*---------------------------------------------------------------------------*/
 /** @} */

@@ -151,6 +151,19 @@ void rtimer_arch_schedule(rtimer_clock_t t);
 
 #define RTIMER_SECOND RTIMER_ARCH_SECOND
 
+//#define SUSPEND_OK  1
+//#define SUSPEND_ERR 0
+//char suspend_flag_on();
+//char suspend_flag_off();
+//#define MAX_NUM_STACKS  2
+//#define STACK_SIZE      256
+//uint8_t main_thread_stack[STACK_SIZE];
+//uint8_t sub_thread_stack[STACK_SIZE];
+
+uint8_t init_processs_stack(struct process *p,
+        void *task_ptr, uint8_t *buffer_ptr, uint16_t stack_size);
+
+
 #endif /* __RTIMER_H__ */
 
 /** @} */
