@@ -572,8 +572,10 @@ process_suspend(struct process *p)
 
 
   printf("\nsuspended\n");
-  printf("process_current: %s - state: %d\n", PROCESS_NAME_STRING(PROCESS_CURRENT()), process_current->state);
-  printf("process_preempted: %s - state: %d\n", PROCESS_NAME_STRING(process_preempted), process_preempted->state);
+  printf("process_current: id: %d - state: %d - type: %d\n", 
+         process_current->id, process_current->state, process_current->type);
+  printf("process_preempted: id: %d - state: %d - type: %d\n", 
+         process_preempted->id, process_preempted->state, process_preempted->type);
   //printf("process_realtime: %s - state: %d\n", PROCESS_NAME_STRING(process_realtime), process_realtime->state);
   printf("suspended\n\n");
 
@@ -593,20 +595,24 @@ process_suspend(struct process *p)
 
       process_current = p;
       p->state = PROCESS_STATE_CALLED;
+
+
+
+      printf("\nsuspended\n");
+      printf("process_current: id: %d - state: %d - type: %d\n", 
+             process_current->id, process_current->state, process_current->type);
+      printf("process_preempted: id: %d - state: %d - type: %d\n", 
+             process_preempted->id, process_preempted->state, process_preempted->type);
+      //printf("process_realtime: %s - state: %d\n", PROCESS_NAME_STRING(process_realtime), process_realtime->state);
+      printf("suspended\n\n");
+
+
+
+      return PROCESS_ERR_OK;
     } /* if end */
   } /* for end */
 
-
-
-  printf("\nsuspended\n");
-  printf("process_current: %s - state: %d\n", PROCESS_NAME_STRING(PROCESS_CURRENT()), process_current->state);
-  printf("process_preempted: %s - state: %d\n", PROCESS_NAME_STRING(process_preempted), process_preempted->state);
-  //printf("process_realtime: %s - state: %d\n", PROCESS_NAME_STRING(process_realtime), process_realtime->state);
-  printf("suspended\n\n");
-
-
-
-  return PROCESS_ERR_OK;
+  return PROCESS_ERR_SUSPEND;
 }
 /*---------------------------------------------------------------------------*/
 int
@@ -635,8 +641,10 @@ process_resume(struct process *p)
 
 
   printf("\nresume\n");
-  printf("process_current: %s - state: %d\n", PROCESS_NAME_STRING(PROCESS_CURRENT()), process_current->state);
-  printf("process_preempted: %s - state: %d\n", PROCESS_NAME_STRING(process_preempted), process_preempted->state);
+  printf("process_current: id: %d - state: %d - type: %d\n", 
+         process_current->id, process_current->state, process_current->type);
+  printf("process_preempted: id: %d - state: %d - type: %d\n", 
+         process_preempted->id, process_preempted->state, process_preempted->type);
   //printf("process_realtime: %s - state: %d\n", PROCESS_NAME_STRING(process_realtime), process_realtime->state);
   printf("resume\n\n");
 
@@ -646,24 +654,28 @@ process_resume(struct process *p)
     if(q->state == PROCESS_STATE_SUSPENDED) {
       //p = q;
       //suspend_count = suspend_count + 1;
-      //process_current = q;
+      process_current = q;
       q->state = PROCESS_STATE_CALLED;
       process_stack_ptr = q->stack_ptr;
 
       process_preempted = NULL;
       p->state = PROCESS_STATE_RUNNING;
+
+
+
+      printf("\nresume\n");
+      printf("process_current: id: %d - state: %d - type: %d\n", 
+             process_current->id, process_current->state, process_current->type);
+      printf("process_preempted: id: %d - state: %d - type: %d\n", 
+             process_preempted->id, process_preempted->state, process_preempted->type);
+      //printf("process_realtime: %s - state: %d\n", PROCESS_NAME_STRING(process_realtime), process_realtime->state);
+      printf("resume\n\n");
+
+
+
+      return PROCESS_ERR_OK;
     } /* if end */
   } /* for end  */
-
-
-
-  printf("\nresume\n");
-  printf("process_current: %s - state: %d\n", PROCESS_NAME_STRING(PROCESS_CURRENT()), process_current->state);
-  printf("process_preempted: %s - state: %d\n", PROCESS_NAME_STRING(process_preempted), process_preempted->state);
-  //printf("process_realtime: %s - state: %d\n", PROCESS_NAME_STRING(process_realtime), process_realtime->state);
-  printf("resume\n\n");
-
-
 
   //if(suspend_count != 1) {
   //    printf("\nERROR SUSPENDED PROCESS IS NONE OR TOO MANY\n\n");
@@ -672,7 +684,66 @@ process_resume(struct process *p)
 
   //printf("process_current1: %s - state: %d\n", PROCESS_NAME_STRING(PROCESS_CURRENT()), process_current->state);
 
-  return PROCESS_ERR_OK;
+  return PROCESS_ERR_RESUME;
+}
+/*---------------------------------------------------------------------------*/
+int
+process_switch_preempted()
+{
+  struct process *p;
+
+  for(p = process_list; p != NULL; p = p->next) {
+    if(p->type == REALTIME_TASK) {
+      if(process_suspend(p) == PROCESS_ERR_OK) {
+        return PROCESS_ERR_OK;
+      } /* if suspend end  */
+    } /* if check type end */
+  } /* for end  */
+
+  for(p = process_list; p != NULL; p = p->next) {
+    if(p->id == process_current->id) {
+      process_preempted = p;
+
+      printf("process - id: %d - state: %d - type: %d\n",
+              p->id, p->state, p->type);
+      init_process_stack(p, p->pt.lc, main_thread_stack, STACK_SIZE);
+      process_stack_ptr = p->stack_ptr;
+    } /* if process id end */
+  } /* for end  */
+
+  for(p = process_list; p != NULL; p = p->next) {
+    if(p->type == REALTIME_TASK) {
+      process_current = p;
+    }
+  } /* for end  */
+
+  return PROCESS_ERR_SUSPEND;
+}
+/*---------------------------------------------------------------------------*/
+int
+process_switch_called()
+{
+  struct process *p;
+
+  printf("process_switch_called\n");
+
+  for(p = process_list; p != NULL; p = p->next) {
+    if(p->type == REALTIME_TASK) {
+      if(process_resume(p) == PROCESS_ERR_OK) {
+        return PROCESS_ERR_OK;
+      }
+    }
+  } /* for end */
+
+  for(p = process_list; p != NULL; p = p->next) {
+    if(p->id == process_preempted->id) {
+      process_current = p;
+      process_stack_ptr = p->stack_ptr;
+      process_preempted = NULL;
+    }
+  } /* for end */
+
+  return PROCESS_ERR_RESUME;
 }
 /*---------------------------------------------------------------------------*/
 #if defined(TCNT3) && RTIMER_ARCH_PRESCALER
@@ -715,23 +786,24 @@ ISR (TIMER3_COMPA_vect) {
   printf("------------------\n\n");
   // TODO delete
 
+  
+  process_switch_preempted();
+  //for(p = process_list; p != NULL; p = p->next) {
+  //  if(p->id == process_current->id) {
+  //    process_preempted = p;
 
-  for(p = process_list; p != NULL; p = p->next) {
-    if(p->id == process_current->id) {
-      process_preempted = p;
+  //    printf("process - id: %d - state: %d - type: %d\n",
+  //            p->id, p->state, p->type);
+  //    init_process_stack(p, p->pt.lc, main_thread_stack, STACK_SIZE);
+  //    process_stack_ptr = p->stack_ptr;
+  //  } /* if process id end */
 
-      printf("process - id: %d - state: %d - type: %d\n",
-              p->id, p->state, p->type);
-      init_process_stack(p, p->pt.lc, main_thread_stack, STACK_SIZE);
-      process_stack_ptr = p->stack_ptr;
-    } /* if process id end */
-
-    if(p->type == REALTIME_TASK) {
-      if(process_suspend(p) == PROCESS_ERR_OK) {
-        break;
-      } /* if suspend end  */
-    } /* if check type end */
-  } /* for end  */
+  //  if(p->type == REALTIME_TASK) {
+  //    if(process_suspend(p) == PROCESS_ERR_OK) {
+  //      break;
+  //    } /* if suspend end  */
+  //  } /* if check type end */
+  //} /* for end  */
 
 
   // TODO delete
@@ -797,6 +869,7 @@ ISR (TIMER3_COMPA_vect) {
 
 
   /* interruption is here */
+  process_switch_called();
   /* ---------------- */
   //for(p = process_list; p != NULL; p = p->next) {
   //  //if(p->state == PROCESS_STATE_CALLED) {
@@ -806,18 +879,18 @@ ISR (TIMER3_COMPA_vect) {
   //  }
   //}
   /* ---------------- */
-  for(p = process_list; p != NULL; p = p->next) {
-    if(p->type == REALTIME_TASK) {
-      if(process_resume(p) == PROCESS_ERR_OK) {
-        break;
-      }
-    }
+  //for(p = process_list; p != NULL; p = p->next) {
+  //  if(p->type == REALTIME_TASK) {
+  //    if(process_resume(p) == PROCESS_ERR_OK) {
+  //      break;
+  //    }
+  //  }
 
-    if(p->id == process_preempted->id) {
-      process_stack_ptr = p->stack_ptr;
-      process_preempted = NULL;
-    }
-  } /* for end */
+  //  if(p->id == process_preempted->id) {
+  //    process_stack_ptr = p->stack_ptr;
+  //    process_preempted = NULL;
+  //  }
+  //} /* for end */
   /* ---------------- */
 
 
