@@ -283,11 +283,15 @@ init_process_stack(struct process *p, void *task_ptr, uint8_t *buffer_ptr, uint1
   uint8_t *stack_ptr = buffer_ptr + stack_size - 1;
 
 
-  if (num_stacks > MAX_NUM_STACKS) {
-    /* error, tcb is not big enough, need to increase max_numtasks in uik.h */
-    return -1;
-  }
-
+  /*
+   *  processing when error occurred
+   */
+  //if (num_stacks > MAX_NUM_STACKS) {
+  //  printf("num_stacks: %d\n", num_stacks);
+  //  printf("MAX_NUM_STACKS: %d\n", MAX_NUM_STACKS);
+  //  /* error, tcb is not big enough, need to increase max_numtasks in uik.h */
+  //  return -1;
+  //}
 
 
   /*  setup parameters
@@ -659,6 +663,9 @@ process_resume(struct process *p)
       process_stack_ptr = q->stack_ptr;
 
       process_preempted = NULL;
+      process_preempted->id = 0;
+      process_preempted->state = PROCESS_STATE_NONE;
+      process_preempted->type = NORMAL_TASK;
       p->state = PROCESS_STATE_RUNNING;
 
 
@@ -739,7 +746,11 @@ process_switch_called()
     if(p->id == process_preempted->id) {
       process_current = p;
       process_stack_ptr = p->stack_ptr;
+
       process_preempted = NULL;
+      process_preempted->id = 0;
+      process_preempted->state = PROCESS_STATE_NONE;
+      process_preempted->type = NORMAL_TASK;
     }
   } /* for end */
 
