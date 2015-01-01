@@ -160,6 +160,7 @@ void rtimer_arch_schedule(rtimer_clock_t t);
 //uint8_t main_thread_stack[STACK_SIZE];
 //uint8_t sub_thread_stack[STACK_SIZE];
 
+int realtime_task_init(struct process *p, rtimer_callback_t func);
 uint8_t init_processs_stack(struct process *p,
         void *task_ptr, uint8_t *buffer_ptr, uint16_t stack_size);
 

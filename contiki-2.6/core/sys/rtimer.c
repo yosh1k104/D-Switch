@@ -69,24 +69,34 @@ rtimer_init(void)
 }
 /*---------------------------------------------------------------------------*/
 int
+realtime_task_init(struct process *p, rtimer_callback_t func)
+{
+  init_process_stack(p, func, sub_thread_stack, STACK_SIZE);
+  p->type = REALTIME_TASK;
+  process_realtime = p;
+
+  return 1;
+}
+/*---------------------------------------------------------------------------*/
+int
 rtimer_set(struct rtimer *rtimer, rtimer_clock_t time,
 	   rtimer_clock_t duration,
 	   rtimer_callback_t func, void *ptr)
 {
-  static int set_count = 0;
+  //static int set_count = 0;
 
-  struct process *p; 
-  for(p = process_list; p != NULL; p = p->next) {
-    if((p->state == PROCESS_STATE_CALLED)  && (set_count == 0)) {
-      init_process_stack(p, func, sub_thread_stack, STACK_SIZE);
-      p->type = REALTIME_TASK;
-      process_realtime = p;
-    } /* if end */
-  } /* for end  */
+  //struct process *p; 
+  //for(p = process_list; p != NULL; p = p->next) {
+  //  if((p->state == PROCESS_STATE_CALLED)  && (set_count == 0)) {
+  //    init_process_stack(p, func, sub_thread_stack, STACK_SIZE);
+  //    p->type = REALTIME_TASK;
+  //    process_realtime = p;
+  //  } /* if end */
+  //} /* for end  */
 
-  printf("set count: %d\n", set_count);
+  //printf("set count: %d\n", set_count);
 
-  set_count = set_count + 1;
+  //set_count = set_count + 1;
   
   
    
