@@ -46,7 +46,7 @@
 
 #define RED_INTERVAL 2
 #define GREEN_INTERVAL 3
-#define YELLOW_INTERVAL 1
+#define YELLOW_INTERVAL 4
 
 #define PERIOD_T 5*RTIMER_SECOND  
 /*---------------------------------------------------------------------------*/
@@ -56,10 +56,12 @@ PROCESS(preemption_process, "Preemption process");
 PROCESS(hello_world_process, "Hello world process");
 PROCESS(blink_red_process, "LED blink red process");
 PROCESS(blink_green_process, "LED blink green process");
+PROCESS(blink_yellow_process, "LED blink yellow process");
 AUTOSTART_PROCESSES(&preemption_process,
                     &hello_world_process,
                     &blink_red_process,
-                    &blink_green_process
+                    &blink_green_process,
+                    &blink_yellow_process
 );
 /*---------------------------------------------------------------------------*/
 /* the function which gets called each time the rtimer triggers */
@@ -67,27 +69,8 @@ static char periodic_rtimer(struct rtimer *rt, void* ptr)
 {  
     uint8_t ret;  
     rtimer_clock_t time_now = RTIMER_NOW();  
-    printf("\nRTIMER_NOW: %u\n\n", RTIMER_NOW());
-
-    static uint8_t leds_state = 0;
-    static uint32_t now = 0;
-    uint8_t count = 0;
     
-    //leds_on(LEDS_ALL);
-    leds_on(LEDS_YELLOW);
-    printf("\n{   leds_on(YELLOW) @ %lu    }\n\n", clock_seconds());
-
-    now = clock_seconds();
-    //printf("now: %lu\n", now);
-    while(clock_seconds() < (now + YELLOW_INTERVAL) &&
-          count < 50)
-    {
-        printf("<   leds_on(YELLOW) @ %lu    in while loop    >\n", clock_seconds());
-        count++;
-    }
-
-    leds_off(LEDS_YELLOW);
-    printf("\n{   leds_off(YELLOW) @ %lu    }\n\n", clock_seconds());
+    printf("Hello from rtimer!!!\n");  
     
     ret = rtimer_set(&my_timer, time_now + PERIOD_T, 1,   
           (void (*)(struct rtimer *, void *))periodic_rtimer, NULL);  
@@ -111,7 +94,6 @@ PROCESS_THREAD(preemption_process, ev, data)
      
     while (1)
     {             
-        printf("\n----------Got event number %d in blink_yellow-----------\n\n", ev);
         PROCESS_YIELD();  
     }  
 
@@ -124,7 +106,7 @@ PROCESS_THREAD(hello_world_process, ev, data)
     // variables are declared static to ensure their values are kept
     // between kernel calls.
     static struct etimer timer;
-    static uint8_t count = 0;
+    static int count = 0;
     
     // any process mustt start with this.
     PROCESS_BEGIN();
@@ -143,7 +125,7 @@ PROCESS_THREAD(hello_world_process, ev, data)
         {
             // do the process work
             printf("Hello, world: %d\n\n", count);
-            count++;
+            count ++;
             
             // reset the timer so it will generate an other event
             // the exact same time after it expired (periodicity guaranteed)
@@ -179,9 +161,7 @@ PROCESS_THREAD(blink_red_process, ev, data)
         printf("\n{   leds_on(RED) @ %lu    }\n\n", clock_seconds());
 
         now = clock_seconds();
-        while(clock_seconds() < (now + RED_INTERVAL))
-        {
-            /* processing in while loop */
+        while(clock_seconds() < (now + RED_INTERVAL)){
             //printf("<   leds_on(RED) @ %lu    in while loop    >\n", clock_seconds());
         }
 
@@ -215,14 +195,46 @@ PROCESS_THREAD(blink_green_process, ev, data)
         printf("\n{   leds_on(GREEN) @ %lu    }\n\n", clock_seconds());
 
         now = clock_seconds();
-        while(clock_seconds() < (now + GREEN_INTERVAL))
-        {
-            /* processing in while loop */
+        while(clock_seconds() < (now + GREEN_INTERVAL)){
             //printf("<   leds_on(GREEN) @ %lu    in while loop    >\n", clock_seconds());
         }
 
         leds_off(LEDS_GREEN);
         printf("\n{   leds_off(GREEN) @ %lu    }\n\n", clock_seconds());
+
+    }
+    PROCESS_END();
+}
+/*---------------------------------------------------------------------------*/
+/* Implementation of the fifth process */
+PROCESS_THREAD(blink_yellow_process, ev, data)
+{
+    static struct etimer timer;
+    static uint8_t leds_state = 0;
+    static uint32_t now = 0;
+    PROCESS_BEGIN();
+    
+    while (1)
+    {
+        // we set the timer from here every time
+        etimer_set(&timer, CLOCK_CONF_SECOND / 10);
+        
+        // and wait until the vent we receive is the one we're waiting for
+        PROCESS_WAIT_EVENT_UNTIL(ev == PROCESS_EVENT_TIMER);
+
+        printf("\n----------Got event number %d in blink_yellow-----------\n\n", ev);
+        
+        //leds_on(LEDS_ALL);
+        leds_on(LEDS_YELLOW);
+        printf("\n{   leds_on(YELLOW) @ %lu    }\n\n", clock_seconds());
+
+        now = clock_seconds();
+        while(clock_seconds() < (now + YELLOW_INTERVAL)){
+            //printf("<   leds_on(YELLOW) @ %lu    in while loop    >\n", clock_seconds());
+        }
+
+        leds_off(LEDS_YELLOW);
+        printf("\n{   leds_off(YELLOW) @ %lu    }\n\n", clock_seconds());
 
     }
     PROCESS_END();
