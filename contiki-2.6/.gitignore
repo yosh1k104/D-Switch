@@ -4,10 +4,13 @@
 *.png
 *.log
 *.elf
+*.lst
 *.ihex
 *.swp
 *.swo
 *~
+*.micaz
+*.sky
 obj_*
 symbols.*
 Makefile.target
