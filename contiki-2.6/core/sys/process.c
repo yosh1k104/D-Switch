@@ -199,7 +199,7 @@ call_process(struct process *p, process_event_t ev, process_data_t data)
     printf("process: process '%s' called again with event %d\n", PROCESS_NAME_STRING(p), ev);
   }
 #endif /* DEBUG */
-  
+
   if((p->state & PROCESS_STATE_RUNNING) &&
      p->thread != NULL) {
     if(ev == 129){

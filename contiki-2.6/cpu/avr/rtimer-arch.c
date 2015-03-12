@@ -275,7 +275,9 @@ asm volatile (  \
 uint8_t
 init_process_stack(struct process *p, void *task_ptr, uint8_t *buffer_ptr, uint16_t stack_size)
 {
+  /** TODO for debug
   printf("\nStart of init_process_stack\n\n");
+  */
 
   unsigned int this_address;
 
@@ -403,7 +405,9 @@ init_process_stack(struct process *p, void *task_ptr, uint8_t *buffer_ptr, uint1
 
   num_stacks++;
 
+  /** TODO for debug
   printf("\nEnd of init_process_stack\n\n");
+  */
 
   /* return the task id */
   //return (num_stacks - 1);
@@ -550,12 +554,16 @@ process_suspend(struct process *p)
   struct process *q;
 
   if(process_preempted != NULL) {
+    /** TODO for debug
     printf("\nERROR SUSPENDED PROCESS HAS ALREADY EXISTED\n\n");
+    */
     return PROCESS_ERR_SUSPEND;
   }
 
   if(process_current->state == PROCESS_STATE_RUNNING) {
+    /** TODO for debug
     printf("\nCALLED PROCESS IS NONE\n\n");
+    */
 
     //for(q = process_list; q != NULL; q = q->next) {
     //  if(q->id = process_current->id) {
@@ -567,14 +575,13 @@ process_suspend(struct process *p)
 
     p->state = PROCESS_STATE_CALLED;
 
-
     suspend_flag = 1;
 
     return PROCESS_ERR_RUNNING;
   }
 
 
-
+  /** TODO for debug
   printf("\nsuspended\n");
   printf("process_current: id: %d - state: %d - type: %d\n", 
          process_current->id, process_current->state, process_current->type);
@@ -582,12 +589,15 @@ process_suspend(struct process *p)
          process_preempted->id, process_preempted->state, process_preempted->type);
   //printf("process_realtime: %s - state: %d\n", PROCESS_NAME_STRING(process_realtime), process_realtime->state);
   printf("suspended\n\n");
+  */
 
 
 
   for(q = process_list; q != NULL; q = q->next) {
     if(q->state == PROCESS_STATE_SUSPENDED) {
+      /** TODO for debug
       printf("\nERROR SUSPENDED PROCESS HAS ALREADY EXISTED\n\n");
+      */
       return PROCESS_ERR_SUSPEND;
     }
 
@@ -602,6 +612,7 @@ process_suspend(struct process *p)
 
 
 
+      /** TODO for debug
       printf("\nsuspended\n");
       printf("process_current: id: %d - state: %d - type: %d\n", 
              process_current->id, process_current->state, process_current->type);
@@ -609,6 +620,7 @@ process_suspend(struct process *p)
              process_preempted->id, process_preempted->state, process_preempted->type);
       //printf("process_realtime: %s - state: %d\n", PROCESS_NAME_STRING(process_realtime), process_realtime->state);
       printf("suspended\n\n");
+      */
 
 
 
@@ -638,12 +650,15 @@ process_resume(struct process *p)
 
   // TODO call init change stack function
   if(process_preempted == NULL) {
+    /** TODO for debug
     printf("\nERROR PREEMPTED PROCESS IS NONE\n\n");
+    */
     return PROCESS_ERR_RESUME;
   }
 
 
 
+  /** TODO for debug
   printf("\nresume\n");
   printf("process_current: id: %d - state: %d - type: %d\n", 
          process_current->id, process_current->state, process_current->type);
@@ -651,6 +666,7 @@ process_resume(struct process *p)
          process_preempted->id, process_preempted->state, process_preempted->type);
   //printf("process_realtime: %s - state: %d\n", PROCESS_NAME_STRING(process_realtime), process_realtime->state);
   printf("resume\n\n");
+  */
 
 
 
@@ -670,6 +686,7 @@ process_resume(struct process *p)
 
 
 
+      /** TODO for debug
       printf("\nresume\n");
       printf("process_current: id: %d - state: %d - type: %d\n", 
              process_current->id, process_current->state, process_current->type);
@@ -677,6 +694,7 @@ process_resume(struct process *p)
              process_preempted->id, process_preempted->state, process_preempted->type);
       //printf("process_realtime: %s - state: %d\n", PROCESS_NAME_STRING(process_realtime), process_realtime->state);
       printf("resume\n\n");
+      */
 
 
 
@@ -711,8 +729,10 @@ process_switch_preempted()
     if(p->id == process_current->id) {
       process_preempted = p;
 
+      /** TODO for debug
       printf("process - id: %d - state: %d - type: %d\n",
               p->id, p->state, p->type);
+      */
       init_process_stack(p, p->pt.lc, main_thread_stack, STACK_SIZE);
       process_stack_ptr = p->stack_ptr;
     } /* if process id end */
@@ -732,7 +752,9 @@ process_switch_called()
 {
   struct process *p;
 
+  /** TODO for debug
   printf("process_switch_called\n");
+  */
 
   for(p = process_list; p != NULL; p = p->next) {
     if(p->type == REALTIME_TASK) {
@@ -759,7 +781,9 @@ process_switch_called()
 /*---------------------------------------------------------------------------*/
 #if defined(TCNT3) && RTIMER_ARCH_PRESCALER
 ISR (TIMER3_COMPA_vect) {
+  /** TODO for debug
   printf("\n\n---------------call ISR3---------------\n\n");
+  */
   DEBUGFLOW('/');
   ENERGEST_ON(ENERGEST_TYPE_IRQ);
 
@@ -783,6 +807,7 @@ ISR (TIMER3_COMPA_vect) {
   struct process *p;
 
 
+  /** TODO for debug
   // TODO delete
   printf("\n------------------\n");
   for(p = process_list; p != NULL; p = p->next) {
@@ -796,6 +821,7 @@ ISR (TIMER3_COMPA_vect) {
             process_preempted->id, process_preempted->state, process_preempted->type);
   printf("------------------\n\n");
   // TODO delete
+  */
 
   
   process_switch_preempted();
@@ -817,6 +843,7 @@ ISR (TIMER3_COMPA_vect) {
   //} /* for end  */
 
 
+  /** TODO for debug
   // TODO delete
   printf("\n------------------\n");
   for(p = process_list; p != NULL; p = p->next) {
@@ -830,10 +857,13 @@ ISR (TIMER3_COMPA_vect) {
             process_preempted->id, process_preempted->state, process_preempted->type);
   printf("------------------\n\n");
   // TODO delete
+  */
 
 
   SAVE_CONTEXT();
+  /** TODO for debug
   printf("saved main\n");
+  */
 
 
   for(p = process_list; p != NULL; p = p->next) {
@@ -844,16 +874,22 @@ ISR (TIMER3_COMPA_vect) {
 
 
   RESTORE_CONTEXT();
+  /** TODO for debug
   printf("restore sub\n");
+  */
   /**
     *   end edited by ysk
     */
 
 
   /* Call rtimer callback */
+  /** TODO for debug
   printf("start rtimer next\n");
+  */
   rtimer_run_next();
+  /** TODO for debug
   printf("finish rtimer next\n");
+  */
 
 
   /**
@@ -861,9 +897,12 @@ ISR (TIMER3_COMPA_vect) {
     */
   /* interruption is here */
   SAVE_CONTEXT();
+  /** TODO for debug
   printf("saved sub\n");
+  */
 
 
+  /** TODO for debug
   // TODO delete
   printf("\n------------------\n");
   for(p = process_list; p != NULL; p = p->next) {
@@ -877,6 +916,7 @@ ISR (TIMER3_COMPA_vect) {
             process_preempted->id, process_preempted->state, process_preempted->type);
   printf("------------------\n\n");
   // TODO delete
+  */
 
 
   /* interruption is here */
@@ -906,6 +946,7 @@ ISR (TIMER3_COMPA_vect) {
 
 
   
+  /** TODO for debug
   // TODO delete
   printf("\n------------------\n");
   for(p = process_list; p != NULL; p = p->next) {
@@ -919,10 +960,13 @@ ISR (TIMER3_COMPA_vect) {
             process_preempted->id, process_preempted->state, process_preempted->type);
   printf("------------------\n\n");
   // TODO delete
+  */
 
 
   RESTORE_CONTEXT();
+  /** TODO for debug
   printf("restore main\n");
+  */
   /**
     *   end edited by ysk
     */
@@ -932,7 +976,9 @@ ISR (TIMER3_COMPA_vect) {
 
   ENERGEST_OFF(ENERGEST_TYPE_IRQ);
   DEBUGFLOW('\\');
+  /** TODO for debug
   printf("\n\n---------------end ISR3---------------\n\n");
+  */
 }
 
 #elif RTIMER_ARCH_PRESCALER
@@ -1026,7 +1072,9 @@ rtimer_arch_init(void)
 void
 rtimer_arch_schedule(rtimer_clock_t t)
 {
+  /** TODO for debug
   printf("\nstart rtimer_arch_schedule\n\n");
+  */
 #if RTIMER_ARCH_PRESCALER
   /* Disable interrupts (store old state) */
   uint8_t sreg;
@@ -1195,7 +1243,9 @@ rtimer_arch_schedule(rtimer_clock_t t)
   SREG = sreg;
 #endif /* RTIMER_ARCH_PRESCALER */
 
+  /** TODO for debug
   printf("\nfinish rtimer_arch_schedule\n\n");
+  */
 }
 
 #if RDC_CONF_MCU_SLEEP

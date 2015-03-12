@@ -102,8 +102,10 @@ rtimer_set(struct rtimer *rtimer, rtimer_clock_t time,
    
   int first = 0;
 
+  /** TODO for debug
   printf("rtimer_set time %d\n", time);
   printf("rtimer process current: %s\n", PROCESS_NAME_STRING(process_current));
+  */
   //printf("rtimer realtime process: %s\n\n", PROCESS_NAME_STRING(process_realtime));
 
   if(next_rtimer == NULL) {
@@ -130,7 +132,9 @@ rtimer_run_next(void)
   //for(tmp_p = process_list; tmp_p != NULL; tmp_p = tmp_p->next) {
   //  printf("process: %s - state: %d\n", PROCESS_NAME_STRING(tmp_p), tmp_p->state);
   //}
+  /** TODO for debug
   printf("\n---------------in rtimer-----------------\n");
+  */
 
   struct rtimer *t;
   if(next_rtimer == NULL) {
@@ -138,14 +142,20 @@ rtimer_run_next(void)
   }
   t = next_rtimer;
   next_rtimer = NULL;
+  /** TODO for debug
   printf("start here\n");
+  */
   t->func(t, t->ptr);
+  /** TODO for debug
   printf("end here\n");
+  */
   if(next_rtimer != NULL) {
     rtimer_arch_schedule(next_rtimer->time);
   }
 
+  /** TODO for debug
   printf("\n---------------end rtimer-----------------\n");
+  */
 
   return;
 }
