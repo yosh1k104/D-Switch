@@ -114,6 +114,7 @@ PROCESS_THREAD(preemption_process, ev, data)
 
     printf("Starting the application...\n");
 
+    realtime_task_init(&preemption_process, (void (*)(struct rtimer *, void *))periodic_rtimer);
     periodic_rtimer(&my_timer, NULL);
 
     while (1)
