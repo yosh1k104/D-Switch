@@ -5,6 +5,9 @@
 *.log
 *.elf
 *.ihex
+*.swp
+*.swo
+*~
 obj_*
 symbols.*
 Makefile.target
