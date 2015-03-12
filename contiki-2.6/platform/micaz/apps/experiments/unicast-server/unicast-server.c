@@ -45,8 +45,6 @@
 #include "dev/leds.h"
 
 #include <stdio.h>
-
-#define INTERVAL 500
 /*---------------------------------------------------------------------------*/
 PROCESS(example_unicast_process, "Example unicast");
 AUTOSTART_PROCESSES(&example_unicast_process);
@@ -54,18 +52,14 @@ AUTOSTART_PROCESSES(&example_unicast_process);
 static void
 recv_uc(struct unicast_conn *c, const rimeaddr_t *from)
 {
-  uint32_t count = 0;
-
   leds_on(LEDS_RED);
-  while(count < INTERVAL) {
-    printf("r");
-    count++;
-  }
-  printf("\n");
+  clock_delay(400);
   leds_off(LEDS_RED);
 
-  printf("unicast message received from %d.%d: '%s'\n",
-	 from->u8[0], from->u8[1], (char *)packetbuf_dataptr());
+//  printf("%d(s): unicast message received from %d.%d: '%s'\n",
+//	 (int)clock_seconds(), from->u8[0], from->u8[1], (char *)packetbuf_dataptr());
+  printf("%d,%d.%d,%s\n",
+	 (int)clock_seconds(), from->u8[0], from->u8[1], (char *)packetbuf_dataptr());
 }
 static const struct unicast_callbacks unicast_callbacks = {recv_uc};
 static struct unicast_conn uc;
@@ -97,14 +91,8 @@ PROCESS_THREAD(example_unicast_process, ev, data)
     if(!rimeaddr_cmp(&addr, &rimeaddr_node_addr)) {
       unicast_send(&uc, &addr);
 
-      uint32_t count = 0;
-
       leds_on(LEDS_GREEN);
-      while(count < INTERVAL) {
-        printf("g");
-        count++;
-      }
-      printf("\n");
+      clock_delay(400);
       leds_off(LEDS_GREEN);
 
       printf("unicast message sent\n");

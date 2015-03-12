@@ -60,7 +60,8 @@
 #define NETSTACK_CONF_RDC     sicslowmac_driver
 #define NETSTACK_CONF_FRAMER  framer_802154
 
-#define CC2420_CONF_AUTOACK              1
+#define CC2420_CONF_AUTOACK              0
+//#define CC2420_CONF_AUTOACK              1
 #define NETSTACK_CONF_RDC_CHANNEL_CHECK_RATE     8
 #define RIME_CONF_NO_POLITE_ANNOUCEMENTS 0
 #define CXMAC_CONF_ANNOUNCEMENTS         0
@@ -75,7 +76,8 @@
 #define NETSTACK_CONF_RDC     cxmac_driver
 #define NETSTACK_CONF_FRAMER  framer_802154
 
-#define CC2420_CONF_AUTOACK              1
+#define CC2420_CONF_AUTOACK              0
+//#define CC2420_CONF_AUTOACK              1
 #define NETSTACK_CONF_RDC_CHANNEL_CHECK_RATE     8
 
 #define COLLECT_CONF_ANNOUNCEMENTS       1
